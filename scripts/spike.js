@@ -46,7 +46,8 @@ if (result) {
 await browser.close();
 
 const finding = {
-  key: 'K01:home:contact',
+  key: 'K01|cp-home|contact',
+  qid: 'f1',
   checkId: 'K01',
   category: 'keyboard',
   verification: 'confirmed',

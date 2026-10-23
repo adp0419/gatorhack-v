@@ -17,7 +17,8 @@ export const EVIDENCE_STATES = [
   { value: 'insufficient', description: 'The observations are too incomplete to judge.' },
 ];
 
-// Up to 3 questions per finding; the API accepts at most 400 per request.
+// Findings are referred to by their short `qid` (f1, f2, ...) in question
+// names and evidence. Up to 3 questions per finding; the API accepts at most 400 per request.
 export const MAX_FINDINGS_PER_REQUEST = 130;
 
 function questionsFor(key) {
@@ -43,7 +44,7 @@ function questionsFor(key) {
 }
 
 export function buildRequest(findings, context) {
-  const questions = findings.flatMap((f) => questionsFor(f.key));
+  const questions = findings.flatMap((f) => questionsFor(f.qid));
   return {
     model: config.openai.model,
     input: [
@@ -66,7 +67,7 @@ export function buildRequest(findings, context) {
 
 function evidenceOf(f) {
   return {
-    key: f.key,
+    id: f.qid,
     check: f.checkId,
     category: f.category,
     verification: f.verification,
@@ -83,9 +84,9 @@ export function parseAnswers(findings, data) {
   const byName = new Map((data.answers || []).map((a) => [a.name, a]));
   const out = {};
   for (const f of findings) {
-    const state = byName.get(`${f.key}__evidence_state`);
-    const impact = byName.get(`${f.key}__impact_band`);
-    const review = byName.get(`${f.key}__needs_review`);
+    const state = byName.get(`${f.qid}__evidence_state`);
+    const impact = byName.get(`${f.qid}__impact_band`);
+    const review = byName.get(`${f.qid}__needs_review`);
     if (!state && !impact && !review) continue;
     out[f.key] = {
       evidenceState: state ? { choice: state.choice, confidence: state.confidence ?? null, probabilities: state.probabilities ?? null } : null,

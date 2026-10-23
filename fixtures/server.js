@@ -3,7 +3,7 @@
 // so `npm run fixture:fixed` plays the role of a developer deploying a fix.
 // Seeded defects (broken variant), one or more per category:
 //   keyboard   - "Contact" nav item is a pointer-only <span onclick>
-//   forms      - email input has no label; validation error does not name the field
+//   forms      - email input has only adjacent text, no label; validation error does not name the field
 //   contrast   - tagline and footer text are low contrast
 //   semantics  - icon-only search button has no name; hero image has no alt
 //   reflow     - promo banner has a fixed 900px width
@@ -37,7 +37,7 @@ const styles = (fixed) => `
   .promo { ${fixed ? 'max-width: 100%;' : 'width: 900px;'} background: #ecfdf5; border: 1px solid #a7f3d0; padding: 16px; margin: 16px 0; }
   .hero { max-width: 100%; height: auto; display: block; }
   footer { padding: 24px; color: ${fixed ? '#4b5563' : '#c4c4c4'}; font-size: 14px; }
-  label { display: block; font-weight: 600; margin-top: 12px; }
+  label, .field-label { display: block; font-weight: 600; margin: 12px 0 0; }
   input, textarea { font: inherit; padding: 8px; width: 100%; max-width: 420px; border: 1px solid #6b7280; border-radius: 4px; }
   button { font: inherit; }
   .submit { margin-top: 16px; padding: 8px 16px; background: #14532d; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
@@ -113,7 +113,8 @@ function contact(fixed) {
     ? `<label for="email">Email</label>
     <input id="email" name="email" type="text" autocomplete="email" aria-describedby="email-error">
     <p id="email-error" class="error" hidden></p>`
-    : `<input id="email" name="email" type="text" placeholder="Email">`;
+    : `<p class="field-label">Email</p>
+    <input id="email" name="email" type="text">`;
   const script = fixed
     ? `
   form.addEventListener('submit', (e) => {

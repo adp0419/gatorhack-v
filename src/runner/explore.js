@@ -36,9 +36,18 @@ export function initialCheckpoint(sig, url) {
   return makeCheckpoint(sig, url, 0, [], null);
 }
 
+// Goal used on retest so Twinly navigates back to a stored checkpoint.
+export function reachGoal(checkpoint) {
+  return (
+    `Navigate this website to a specific page or state. ${checkpoint.setupGoal} ` +
+    'Use the mouse like a typical visitor. Never submit forms, sign in, buy, download, or leave this website. ' +
+    'Finish with done as soon as that page or state is shown.'
+  );
+}
+
 // Runs the loop until done/fail/budget/cancel. Returns checkpoints, the
 // pointer interactions Twinly performed, and the reason exploration stopped.
-export async function explore({ page, target, recorder, goal = AUTO_OBJECTIVE, checkpoints, isCancelled, deadline, callBudget = budgets.twinlyCalls, stopWhen }) {
+export async function explore({ page, target, recorder, goal = AUTO_OBJECTIVE, checkpoints, isCancelled, deadline, callBudget = budgets.twinlyCalls, stopWhen, selectCheckpoints = true }) {
   const viewport = viewports.desktop;
   const steps = [];
   const executed = [];
@@ -122,7 +131,7 @@ export async function explore({ page, target, recorder, goal = AUTO_OBJECTIVE, c
       interactions.push({ checkpointId: fromCp ? fromCp.id : null, target: facts.target, before, after, changed, actor: 'twinly' });
     }
 
-    if (changed && !seen.has(signatureKey(after)) && checkpoints.length < budgets.maxCheckpoints) {
+    if (selectCheckpoints && changed && !seen.has(signatureKey(after)) && checkpoints.length < budgets.maxCheckpoints) {
       const cp = makeCheckpoint(after, page.url(), checkpoints.length, executed.map(({ type, x, y, label, keys, text, cssPoint }) => ({ type, x, y, label, keys, text, cssPoint })), record);
       checkpoints.push(cp);
       seen.set(signatureKey(after), cp);

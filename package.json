@@ -13,7 +13,7 @@
     "fixture:broken": "node fixtures/set-variant.js broken",
     "fixture:fixed": "node fixtures/set-variant.js fixed",
     "spike": "node --env-file-if-exists=.env scripts/spike.js",
-    "test": "node --test test/"
+    "test": "node --test \"test/*.test.js\""
   },
   "dependencies": {
     "@axe-core/playwright": "^4.14.0",
