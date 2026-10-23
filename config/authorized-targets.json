@@ -1,0 +1,17 @@
+{
+  "targets": [
+    {
+      "origin": "http://localhost:4100",
+      "label": "AccessBench controlled fixture",
+      "allowPrivateNetwork": true,
+      "formRecipes": [
+        {
+          "path": "/contact",
+          "form": "#contact-form",
+          "submit": "#contact-submit",
+          "invalid": [{ "field": "#email", "value": "not-an-email" }]
+        }
+      ]
+    }
+  ]
+}
