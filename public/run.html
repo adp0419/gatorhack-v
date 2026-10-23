@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AccessBench — audit</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="/">AccessBench</a>
+    <a href="/">Start a new audit</a>
+  </div>
+</header>
+<main id="main" class="inner">
+  <h1 id="run-heading">Audit</h1>
+  <dl class="status-line" aria-label="Audit status">
+    <div><dt>Target</dt><dd id="target">—</dd></div>
+    <div><dt>Status</dt><dd id="lifecycle">—</dd></div>
+    <div><dt>Phase</dt><dd id="phase">—</dd></div>
+    <div><dt>Elapsed</dt><dd id="elapsed">—</dd></div>
+  </dl>
+  <div class="actions">
+    <button type="button" id="cancel" class="secondary" hidden>Cancel audit</button>
+  </div>
+  <p id="announcer" class="visually-hidden" role="status" aria-live="polite"></p>
+  <p id="connection" class="stale" hidden></p>
+
+  <div id="report"></div>
+
+  <section aria-labelledby="live-heading">
+    <h2 id="live-heading">Browser activity</h2>
+    <div class="live-grid">
+      <div class="panel viewer">
+        <figure>
+          <img id="frame" alt="No browser screenshot captured yet." width="1280" height="800">
+          <figcaption id="frame-caption">Waiting for the first screenshot.</figcaption>
+        </figure>
+        <p class="current-action" id="current-action"></p>
+        <p><a id="frame-link" href="#" hidden>Open the full-size screenshot</a></p>
+      </div>
+      <div class="panel">
+        <h3>Audited states</h3>
+        <ol id="checkpoints"><li class="muted">None yet.</li></ol>
+        <h3 id="trail-heading">Action trail</h3>
+        <ol class="log" id="log" aria-labelledby="trail-heading"></ol>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="/run.js" type="module"></script>
+</body>
+</html>

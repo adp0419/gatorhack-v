@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AccessBench — start an audit</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site-header">
+  <div class="inner"><a class="brand" href="/">AccessBench</a></div>
+</header>
+<main id="main" class="inner">
+  <h1>Audit a website's accessibility</h1>
+  <p>AccessBench opens the site in a real browser, lets Twinly explore it like a visitor, and runs bounded checks in five categories: keyboard operation, forms, text contrast, structure and semantics, and zoom and reflow.</p>
+
+  <section class="panel" aria-labelledby="start-heading">
+    <h2 id="start-heading">Start an audit</h2>
+    <form id="start-form" novalidate>
+      <label for="url">Website address</label>
+      <input id="url" name="url" type="url" inputmode="url" autocomplete="url" required aria-describedby="url-hint url-error" placeholder="https://example.com">
+      <p id="url-hint" class="hint">A public page that does not require signing in.</p>
+      <p id="url-error" class="field-error" hidden></p>
+      <div class="actions">
+        <button type="submit" id="start-button">Start audit</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel" aria-labelledby="scope-heading">
+    <h2 id="scope-heading">What an audit covers</h2>
+    <ul>
+      <li>The start page plus at most two more pages or states that Twinly reaches.</li>
+      <li>Eleven defined checks, each mapped to related WCAG 2.2 criteria. This is not a full WCAG evaluation or certification.</li>
+      <li>Forms are never submitted on public sites; form error behavior is only tested on configured test sites.</li>
+      <li>Reflow is tested at 320 CSS pixels. Text resizing is not tested.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="recent-heading">
+    <h2 id="recent-heading">Recent audits</h2>
+    <div id="recent"><p class="muted">Loading…</p></div>
+  </section>
+</main>
+<script src="/start.js" type="module"></script>
+</body>
+</html>
