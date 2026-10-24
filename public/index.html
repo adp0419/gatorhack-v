@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>AccessBench</title>
+    <link rel="stylesheet" href="/styles/tokens.css" />
+    <link rel="stylesheet" href="/styles/components.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <a class="brand" href="#">AccessBench</a
+      ><span class="subtle">A bounded accessibility benchmark</span>
+    </header>
+    <main id="main">
+      <section id="start-view" aria-labelledby="start-title">
+        <div class="intro">
+          <p class="eyebrow">Inspect. Understand. Retest.</p>
+          <h1 id="start-title">See where access breaks.</h1>
+          <p>
+            Watch a real browser explore your site. Inspect measured findings
+            across five categories, then verify a fix.
+          </p>
+        </div>
+        <section class="panel demo-panel" aria-labelledby="demo-title">
+          <h2 id="demo-title">Try the demo site</h2>
+          <p>
+            Compare a prepared broken site with its fixed version using the same
+            audit engine.
+          </p>
+          <form id="demo-form" aria-describedby="demo-error">
+            <fieldset class="demo-choices">
+              <legend>Version to audit</legend>
+              <label
+                ><input type="radio" name="variant" value="broken" checked />
+                Broken website</label
+              >
+              <label
+                ><input type="radio" name="variant" value="fixed" /> Fixed
+                website</label
+              >
+            </fieldset>
+            <div class="button-row">
+              <button id="demo-button" type="submit">Audit the demo site</button
+              ><a id="demo-link" target="_blank" rel="noopener" hidden
+                >View demo site (opens in a new tab)</a
+              >
+            </div>
+            <p id="demo-error" class="error" role="alert"></p>
+          </form>
+        </section>
+        <form id="start-form" class="panel">
+          <label for="target-url">Website URL</label>
+          <div class="input-row">
+            <input
+              id="target-url"
+              name="url"
+              type="url"
+              required
+              placeholder="https://example.com"
+              aria-describedby="target-help form-error"
+            /><button type="submit" id="start-button">Start audit</button>
+          </div>
+          <p id="target-help" class="subtle">
+            Up to three states, selected keyboard interactions, and 320 px
+            reflow. Public sites receive non-submitting checks.
+          </p>
+          <p id="form-error" class="error" role="alert"></p>
+          <div id="token-row" hidden>
+            <label for="access-token">Demo access token</label
+            ><input
+              id="access-token"
+              type="password"
+              autocomplete="off"
+            /><button id="unlock" type="button">Connect</button>
+          </div>
+          <div id="demo-targets" class="button-row"></div>
+          <p id="configuration" class="subtle"></p>
+        </form>
+        <div class="scope-grid" aria-label="Five categories">
+          <p>Keyboard operation</p>
+          <p>Forms and validation</p>
+          <p>Text contrast</p>
+          <p>Structure and semantics</p>
+          <p>Zoom and reflow</p>
+        </div>
+        <p class="subtle">
+          Results describe the tested sample. They do not establish whole-site
+          WCAG conformance. Dedicated text resizing is outside this benchmark.
+        </p>
+        <section class="recent-audits" aria-labelledby="recent-title">
+          <h2 id="recent-title">Recent audits</h2>
+          <p class="subtle">
+            The ten most recent saved runs on this local runner.
+          </p>
+          <div id="recent-audits">
+            <p class="subtle">Loading saved runs…</p>
+          </div>
+        </section>
+      </section>
+      <section id="run-view" hidden aria-labelledby="run-title">
+        <div class="run-heading">
+          <div>
+            <p class="eyebrow">Audit workspace</p>
+            <h1 id="run-title">Website audit</h1>
+            <p id="run-target" class="wrap"></p>
+          </div>
+          <button id="cancel-button" class="secondary" type="button">
+            Cancel audit
+          </button>
+        </div>
+        <div class="run-meta">
+          <span id="lifecycle" class="badge">Queued</span
+          ><span id="elapsed"></span
+          ><span id="connection" class="subtle">Connecting…</span>
+        </div>
+        <div class="workspace">
+          <section class="panel viewer" aria-labelledby="viewer-title">
+            <div class="section-heading">
+              <h2 id="viewer-title">Browser evidence</h2>
+              <span id="phase" class="subtle"></span>
+            </div>
+            <p id="frame-status" class="subtle">
+              Waiting for the first captured frame.
+            </p>
+            <a
+              id="frame-link"
+              target="_blank"
+              rel="noopener"
+              hidden
+              aria-label="Open full captured browser screenshot"
+              ><img
+                id="browser-frame"
+                alt="Captured audited page; measurements and actions are described in the adjacent action trail."
+                width="1280"
+                height="800"
+            /></a>
+            <p id="current-action">
+              The runner will capture each executed action.
+            </p>
+          </section>
+          <aside class="panel activity" aria-labelledby="trail-title">
+            <h2 id="trail-title">Action trail</h2>
+            <p class="subtle">
+              Twinly exploration and independent probes are labeled separately.
+            </p>
+            <ol
+              id="action-trail"
+              tabindex="0"
+              aria-label="Scrollable action trail"
+            ></ol>
+            <h3>Selected states</h3>
+            <ol id="checkpoints"></ol>
+          </aside>
+        </div>
+        <section id="report" aria-labelledby="results-title" class="report">
+          <div class="section-heading">
+            <h2 id="results-title">Results</h2>
+            <span id="provisional" class="badge">Coverage pending</span>
+            <button id="download-report" type="button" class="secondary" hidden>
+              Download JSON report
+            </button>
+          </div>
+          <p id="download-error" class="error" role="alert"></p>
+          <div class="metrics">
+            <div class="panel">
+              <p>AccessBench score</p>
+              <strong id="overall-score">No score yet</strong>
+            </div>
+            <div class="panel">
+              <p>Planned-check coverage</p>
+              <strong id="overall-coverage">Pending</strong>
+              <p id="conclusive" class="subtle"></p>
+            </div>
+          </div>
+          <p id="scope-description" class="subtle"></p>
+          <details>
+            <summary>What do score and coverage mean?</summary>
+            <p>
+              Each check is counted once per selected state. Category scores
+              summarize conclusive passes and failures; the overall score
+              averages scored categories equally. Coverage averages each
+              applicable category’s conclusive checks divided by planned checks.
+              Review and untested checks reduce coverage. Proven inapplicability
+              is excluded. Missing evidence never becomes a pass.
+            </p>
+          </details>
+          <div id="categories" class="category-grid"></div>
+          <p id="blockers" class="callout"></p>
+          <h3>Findings</h3>
+          <p id="triage-status" class="subtle"></p>
+          <div id="findings"></div>
+          <details>
+            <summary>All check results</summary>
+            <div id="check-results"></div>
+          </details>
+          <div id="errors" class="error"></div>
+          <section id="comparison" hidden aria-labelledby="comparison-title">
+            <h3 id="comparison-title">Retest comparison</h3>
+            <p id="comparison-summary"></p>
+            <div id="comparison-changes"></div>
+          </section>
+          <form id="retest-form" class="panel" hidden>
+            <h3>Verify a fix</h3>
+            <label for="retest-url">Retest URL</label>
+            <div class="input-row">
+              <input
+                id="retest-url"
+                type="url"
+                required
+                aria-describedby="retest-help retest-error"
+              /><button type="submit" id="retest-button">
+                Retest same manifest
+              </button>
+            </div>
+            <p id="retest-help" class="subtle">
+              The runner uses the baseline’s state goals, targets, viewports,
+              and check versions. A vanished target is unverified until positive
+              evidence confirms a fix.
+            </p>
+            <button id="use-fixed" type="button" class="text-button" hidden>
+              Use the prepared fixed fixture
+            </button>
+            <p id="retest-error" class="error" role="alert"></p>
+          </form>
+        </section>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <span>AccessBench</span
+      ><span>Measured evidence. Explicit uncertainty.</span>
+    </footer>
+    <p id="announcer" role="status" aria-live="polite" class="sr-only"></p>
+    <dialog id="finding-dialog" aria-labelledby="finding-title">
+      <div class="section-heading">
+        <h2 id="finding-title">Finding</h2>
+        <button id="close-finding" type="button" class="secondary">
+          Close finding
+        </button>
+      </div>
+      <div id="finding-detail"></div>
+    </dialog>
+  </body>
+</html>

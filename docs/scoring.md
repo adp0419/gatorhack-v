@@ -70,4 +70,6 @@ Match findings by check ID, logical checkpoint ID, and stable target identity. K
 
 Report `resolved` only when the previously failing assertion/target is positively retested and passes, or an intentionally removed feature is explicitly verified with equivalent functionality assessed. Disappearance, timeout, changed selectors, N/A, or missing evidence alone yields **Unverified**, not a verified fix.
 
+A finding may be positively resolved within a successfully reconstructed checkpoint even when another checkpoint fails reconstruction. Preserve its matching method/version, viewport, authorization, and target evidence. Such a partial comparison still receives no overall score delta.
+
 An unchanged failure is **Persistent**. A newly confirmed failure is **New**. Show unmatched results and scope differences explicitly. Show a score delta only for matching manifests and successfully reconstructed scope; otherwise show side-by-side reports labeled **Not directly comparable**.

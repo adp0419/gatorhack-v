@@ -10,6 +10,8 @@ Owner of visual/interaction defaults and report wording. Keep the frontend vanil
 
 A baseline/retest comparison lives in the run view. Do not build a separate history application. Preserve direct links to saved runs and the most recent baseline/retest pair.
 
+The start view includes a broken/fixed demo selector with a preview link and direct audit button, plus the ten most recent saved runs with status, score and coverage. Finished reports offer a JSON download with evidence references; this is a local artifact, not automatic publication. Retest states and the action trail explicitly label recorded-replay or direct-URL reconstruction as system fallbacks.
+
 ## Live view hierarchy
 
 - Header: AccessBench, target origin, run lifecycle, elapsed time, cancel control.
@@ -38,6 +40,8 @@ Retest labels are **Resolved**, **Persistent**, **New**, and **Unverified**. Fol
 ## Visual defaults
 
 Use a calm developer-tool appearance: light background, dark text, blue accent, strong spacing, readable tables, and restrained borders. No sheriff imagery, mascot, decorative graphs, or animation-heavy scan sequence.
+
+The implementation keeps shared tokens in `public/styles/tokens.css`, component styles in `public/styles/components.css`, presentation templates in `public/components.js`, and transport/focus behavior in `public/app.js`. A later frontend skill can replace the visual design without changing the check engine or scoring.
 
 Suggested starting tokens: background `#F8FAFC`, surface `#FFFFFF`, text `#0F172A`, secondary text `#475569`, accent `#1D4ED8`, focus `#1D4ED8`. Start with a system font at 16 px, line height 1.5, and spacing steps 4/8/12/16/24/32 px. Verify actual component contrast and focus visibility rather than assuming tokens establish accessibility.
 

@@ -15,6 +15,8 @@ Owner of execution order, acceptance checks, and demo. Read [status.md](status.m
 
 Front-load milestone 1. Do not spend the first day styling around an unproven hosted browser session. Milestones can overlap once the shared event/result contracts are agreed.
 
+Current execution override (user, 2026-10-23): finish and run the local Node MVP first; defer deployment and the hosting portions of milestones 1 and 5 until then. Provider verification still applies. See [status.md](status.md) for observed results.
+
 Suggested two-builder ownership: one owns runner, Twinly, checks, and scoring; one owns interface, transport/storage, inspector, and comparison presentation. This is a suggested work split, not an instruction to launch additional coding agents. Agree on JSON contracts before independent implementation.
 
 ## First spike
