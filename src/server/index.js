@@ -16,8 +16,14 @@ app.use((req, res, next) => {
 app.use('/api', apiRouter);
 app.use(express.static(path.join(config.root, 'public'), { extensions: ['html'] }));
 
-app.listen(config.port, () => {
-  console.log(`AccessBench at http://localhost:${config.port}`);
-  if (!config.twinly.apiKey) console.log('Twinly key not configured: exploration will be unavailable.');
-  if (!config.openai.apiKey) console.log('OpenAI key not configured: triage will be unavailable.');
-});
+app
+  .listen(config.port, () => {
+    console.log(`AccessBench at http://localhost:${config.port}`);
+    if (!config.twinly.apiKey) console.log('Twinly key not configured: exploration will be unavailable.');
+    if (!config.openai.apiKey) console.log('OpenAI key not configured: triage will be unavailable.');
+  })
+  .on('error', (err) => {
+    if (err.code !== 'EADDRINUSE') throw err;
+    console.error(`Port ${config.port} is already in use (another AccessBench is probably running). Stop it with:\n  lsof -ti tcp:${config.port} | xargs kill`);
+    process.exit(1);
+  });

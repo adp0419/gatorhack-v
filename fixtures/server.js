@@ -160,6 +160,12 @@ app.get('/services', (req, res) => res.send(services(variant() === 'fixed')));
 app.get('/contact', (req, res) => res.send(contact(variant() === 'fixed')));
 app.use((req, res) => res.status(404).send(layout('Not found', '<h1>Page not found</h1>', variant() === 'fixed')));
 
-app.listen(port, () => {
-  console.log(`Fixture site (${variant()} variant) at http://localhost:${port}`);
-});
+app
+  .listen(port, () => {
+    console.log(`Fixture site (${variant()} variant) at http://localhost:${port}`);
+  })
+  .on('error', (err) => {
+    if (err.code !== 'EADDRINUSE') throw err;
+    console.error(`Port ${port} is already in use (another AccessBench is probably running). Stop it with:\n  lsof -ti tcp:${port} | xargs kill`);
+    process.exit(1);
+  });
