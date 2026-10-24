@@ -61,6 +61,7 @@ export class FileStore {
           createdAt: run.createdAt,
           baselineRunId: run.baselineRunId,
           summary: run.summary,
+          versions: run.manifest?.versions,
         });
       } catch (error) {
         if (error.code !== "ENOENT" && !(error instanceof SyntaxError))

@@ -1,75 +1,76 @@
-# Scoring and comparison
+# Website health scoring and comparison
 
-Owner of all numerical rules. Score model version: `equal-categories-v1`. Inputs are the fixed check/state results in [checks.md](checks.md).
+Owner of numerical policy. New evaluations implement `website-health-v2` in `src/health-scoring.js`. Legacy `equal-categories-v1` behavior is preserved in [the archived scoring policy](history/accessibility-v1-scoring.md). Live source acceptance is tracked separately in [status.md](status.md).
 
-## Meaning
+## Category sources
 
-The **AccessBench score** summarizes conclusive results for the declared test plan. It is not a percentage of WCAG met, a percentage of site accessibility, or a ranking calibrated across unrelated sites.
+| Category | Numeric source | Included in overall score? |
+|---|---|---|
+| Accessibility | Lighthouse accessibility category score | Yes |
+| Design & UX | Qualitative Gemma 4 findings only, as requested by the user | No |
+| SEO | Lighthouse SEO category score | Yes |
+| Performance | Lighthouse performance category score | Yes |
+| Functionality | Independently verified outcomes for the one selected journey | Yes |
 
-Five categories have equal weight when scored. Check/state units within each category also have equal weight. Severity, affected-node count, and Decisions output do not change points. Confirmed blockers remain prominent beside the score; there is no blocker cap.
+There are five report categories and four potential numeric scores. Display Design & UX as **Qualitative review**, never 0, 100, N/A, or a missing numeric category. Its review can separately be pending, available, or unavailable. Best Practices diagnostics have no additional numeric weight. Supplemental keyboard/axe/reflow findings do not silently alter Lighthouse scores.
 
 ## Exact calculation
 
-For category `c`, count registered check/state units:
+Default weights are equal among the four numeric categories: 25% each when all are available. This is an explainable product index, not a calibrated prediction of commercial success.
 
 ```text
-P_c = passed
-F_c = failed
-U_c = review + not_tested
-A_c = not_applicable
-D_c = P_c + F_c
-E_c = D_c + U_c
+accessibility = 100 * lighthouse.categories.accessibility.score
+seo           = 100 * lighthouse.categories.seo.score
+performance   = 100 * lighthouse.categories.performance.score
 
-category_score_c = 100 * P_c / D_c         if D_c > 0; otherwise null
-category_coverage_c = 100 * D_c / E_c      if E_c > 0; otherwise N/A
+P = passed journey assertions
+F = failed journey assertions
+U = review + not_tested journey assertions
+A = positively established not_applicable journey assertions
 
-overall_score = mean(non-null category scores)
-overall_coverage = mean(category coverage for categories with E_c > 0)
+functionality          = 100 * P / (P + F)     if P + F > 0; otherwise null
+journey_check_coverage = 100 * (P + F) / (P + F + U)
+                                                if denominator > 0; otherwise N/A
+
+overall_health = mean(available numeric category scores)
+                                                if at least one exists; otherwise null
+score_availability = number of available numeric categories / 4
 ```
 
-This macro-average keeps category coverage aligned with equal category scoring. Also show the unweighted counts `sum(D_c) / sum(E_c)` as **conclusive planned checks**, not as a second conflicting coverage percentage.
+The provider object name is `lighthouseResult` in PageSpeed Insights responses; `lighthouse` above denotes that extracted object. Accept only finite category values in [0, 1]. Preserve valid zero scores. Null, absent, nonnumeric, errored, or malformed source values remain unavailable; never coerce them to 0 or 100. Manual/informative/N/A/error Lighthouse audits are not scored locally as passes. Use the provider category scores, not an invented equal average of audit rows.
 
-Compute with full precision; round displayed scores and coverage to whole numbers at the end. Do not average rounded category scores.
+Compute at full precision and round displayed numbers to whole points only at the end. Count each frozen journey assertion once, regardless of repeated clicks, observed nodes, or retries. Exact assertions and plan-freezing rules belong to [checks.md](checks.md).
 
-## Missing evidence and applicability
+## Completeness and uncertainty
 
-- If every planned unit in a category is conclusively N/A, display **Not applicable** and exclude it from both overall calculations.
-- If a category has applicable/unresolved units but no conclusive result, display **Not scored** and its coverage, normally 0%. Exclude its null score from the provisional score, while retaining it in coverage.
-- If no category has conclusive results, show **No score yet**. Never convert null to 0 or 100.
-- With four scored categories and one genuine N/A category, each scored category contributes 25%. With all five scored, each contributes 20%.
-- A result is **Provisional** if any planned check is `review`/`not_tested`, applicability remains unknown, planned checkpoint reconstruction failed, or exploration did not finish normally.
-- A complete result means completion of this bounded plan only. Avoid calling it a complete accessibility evaluation.
-- No arbitrary minimum-coverage threshold suppresses a score supported by some conclusive evidence. Low-coverage scores always carry their provisional label and denominator.
+- If any numeric category is unavailable or any journey assertion remains unresolved, label the composite **Provisional** and show which sources are missing. Partial evidence can yield 100; that never establishes a completed journey.
+- Show **3 of 4 numeric categories scored**, plus journey assertion coverage and the journey's separate outcome. These are scope disclosures, not a percentage of the website tested or an estimate of correctness.
+- If Gemma 4 is unavailable, measured category scores remain valid; show **Design review/recommendations unavailable** and label the report partial even when all numeric scores exist. Numeric completeness and report completeness are separate.
+- If no numeric evidence exists, show **No score available**. Retain observed findings and source errors.
+- A category can be unavailable because its provider failed. That is not N/A. Design & UX intentionally has no number.
+- If no safe journey can be selected, Functionality is unavailable. If every planned journey assertion is proven N/A, retain the plan and explain why the journey was unsuitable; do not award 100 or quietly reduce the four-category denominator.
+- Confirmed blockers remain visible regardless of score. Severity, issue count, Gemma 4 recommendations, and Best Practices findings do not apply additional deductions or score caps.
+- Preserve Lighthouse warnings and run configuration. An available source score with warnings can be shown with limitations; fatal source errors must not appear as successful measurements.
 
-## Freeze the plan
+Call the result **Website health score — tested scope**. Explain that it combines one page's automated scores and one journey's conclusive checks. It is not percent accessible, full-site quality, SEO ranking potential, conversion probability, or comprehensive functional correctness.
 
-Record a manifest containing checklist/scoring/prompt versions, runtime versions, viewports, navigation policy, budgets, selected checkpoint IDs and setup goals, sampled targets, and authorization mode.
+## Required numerical examples
 
-The maximum is three audited states, not three mandatory states. Normal exploration may discover fewer suitable states. Finalize the selected checkpoint plan and report that scope. During discovery, show coverage as pending or explicitly partial rather than claiming a final denominator.
-
-Once a checkpoint/check is planned, do not remove it because execution failed. Preserve unknown applicability as unresolved. Discovery failure must mark the audit provisional even if checks on the initial checkpoint all completed. Coverage describes planned checks; separately show exploration completion and `audited / planned` checkpoints.
-
-## Worked examples
-
-| Situation | Result |
+| Inputs | Expected display |
 |---|---|
-| Scores 50, 100, 100, 100, 100; complete plan | Overall 90; show any confirmed blocker separately |
-| Forms genuinely N/A; remaining scores 50, 100, 100, 100 | Overall 88 (87.5 before rounding) |
-| Keyboard untested; other four scores 100 with full coverage | Overall 100 **Provisional**, coverage 80%, keyboard **Not scored** |
-| Category: 1 pass, 1 fail, 2 unresolved | Category score 50; coverage 50% |
-| All applicable checks unresolved | No overall score; coverage 0% |
-| A check fails on one node versus twenty nodes | Same scoring contribution; report different affected counts |
+| Accessibility 80, SEO 90, Performance 60, Functionality 100 | Overall 83 (82.5 before rounding); 4/4 numeric scores |
+| Same values; Gemma 4 qualitative critique is severe | Same overall 83; critique shown separately |
+| Functionality unavailable; other values 80, 90, 60 | Overall 77 Provisional; 3/4 numeric scores |
+| Journey: 2 pass, 1 fail, 1 unresolved | Functionality 67, assertion coverage 75%; partial journey |
+| Journey: 1 pass, 2 unresolved | Functionality 100 Provisional, assertion coverage 33%; no journey-completion claim |
+| Valid Lighthouse Performance 0 | Preserve 0 and include it in the average |
+| All numeric sources unavailable | No score available; 0/4 numeric scores |
+| All numeric scores present; Gemma 4 unavailable | Numeric result retained; report partial, qualitative review unavailable |
 
-Use these as required test cases. Add no-applicable-evidence, mixed axe results, unknown applicability, and missing-checkpoint cases.
+## Versions and comparisons
 
-## Comparable retests
+Persist requested/final URLs, source identity, Lighthouse version and configuration/strategy, timestamps, schema and scoring versions, Twinly journey goal and frozen assertions, viewports, guard/authorization mode, prompt/model versions, and evidence references. PageSpeed and Twinly may observe different page/device states; report those differences rather than implying identical execution conditions.
 
-Retest the baseline manifest, with the same logical checkpoints, sample, budgets, methods, and viewports. Twinly still drives navigation using the stored checkpoint goals; a second unconstrained exploration is a fresh audit, not an equivalent retest.
+Never convert an accessibility-v1 report into a website-health-v2 report or show a cross-version overall delta. Keep its original labels, five accessibility subcategory scores, formula, and evidence. Preserve legacy comparison tests and behavior.
 
-Match findings by check ID, logical checkpoint ID, and stable target identity. Keep actual URLs and variants; an explicitly versioned fixture mapping may identify broken/fixed variants as the same logical route. Do not broadly strip URL differences or rely only on coordinates and list indices.
-
-Report `resolved` only when the previously failing assertion/target is positively retested and passes, or an intentionally removed feature is explicitly verified with equivalent functionality assessed. Disappearance, timeout, changed selectors, N/A, or missing evidence alone yields **Unverified**, not a verified fix.
-
-A finding may be positively resolved within a successfully reconstructed checkpoint even when another checkpoint fails reconstruction. Preserve its matching method/version, viewport, authorization, and target evidence. Such a partial comparison still receives no overall score delta.
-
-An unchanged failure is **Persistent**. A newly confirmed failure is **New**. Show unmatched results and scope differences explicitly. Show a score delta only for matching manifests and successfully reconstructed scope; otherwise show side-by-side reports labeled **Not directly comparable**.
+New v2 comparison UI is deferred. When added, compare like sources/configurations and the same logical journey assertions; changed models/prompts, device strategy, missing measurements, failed reconstruction, or changed scope require explicit differences. Lighthouse performance varies between runs; a small score movement alone does not verify a fix. A finding is resolved only after positive retest evidence, not because its target disappeared or Gemma 4 stopped mentioning it.

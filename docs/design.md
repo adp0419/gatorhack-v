@@ -1,57 +1,84 @@
-# Interface and interaction design
+# Interface and report design
 
-Owner of visual/interaction defaults and report wording. Keep the frontend vanilla HTML/CSS/JavaScript. The product itself should demonstrate the accessibility practices it checks.
+Owner of interaction, visual defaults, and report wording. The local interface implements the website evaluation experience with explicit legacy report dispatch; [status.md](status.md) records verification and remaining provider gates. Keep vanilla HTML/CSS/JavaScript and reusable presentation boundaries.
+
+## Accepted creative direction
+
+Accepted on 2026-10-24: frame **AccessBench as an AI experience lab for a website**, using direct language about discovering friction and understanding the customer's next step. Keep the AccessBench name. Lead with curiosity, discovery, and evidence from the browser journey; categories explain the findings underneath that story.
+
+**The website under test is the visual centerpiece of AccessBench.** Actual browser captures, evidence annotations, and selectable observed states give each report its character. The experience should feel like an investigation the user can follow, with observed problems paired with practical next steps.
+
+Proposed opening copy for the overhaul:
+
+> **Your website makes a promise.**
+>
+> **See how it holds up.**
+>
+> AccessBench explores one customer journey, measures the entry page, and turns the evidence into practical improvements.
+>
+> **Explore my website →**
+
+This is the accepted direction, with copy and exact visual tokens still subject to implementation refinement. It does not expand the tested scope or imply human user research, conversion measurement, comprehensive crawling, or guaranteed outcomes. The visual overhaul is planned; the existing interface remains implemented until the frontend changes land.
 
 ## Three views
 
-1. **Start:** product explanation, labeled URL input, scope summary, and Start audit button. No user-goal field in MVP.
-2. **Live audit / results:** one run view that evolves from progress to final report without losing the action trail. Include browser viewer, current phase, checkpoint list, category results, and findings.
-3. **Finding inspector:** an addressable panel or detail view with evidence, reproduction, suggested fix, and retest state. Keep a return-to-results path and restore focus on close.
+1. **Start:** use an oversized headline, a prominent labeled website URL input and proposed **Explore my website** button, and an annotated browser composition. Summarize the entry-page scan plus one automatically selected, non-submitting customer journey near the input. Present the five categories as a quieter supporting line rather than five equal hero boxes. No goal-entry field. Any illustrative browser composition must be clearly distinguished from actual run evidence.
+2. **Live evaluation / dashboard:** one view evolves from source progress into results. Make the captured browser the main stage, with the selected goal, actual actions, and verified outcomes alongside it. Retain provider provenance and source availability as supporting information.
+3. **Issue details:** addressable panel with observation, source, evidence, affected journey/state, suggested improvement, and reproduction steps. Restore focus when it closes.
 
-A baseline/retest comparison lives in the run view. Do not build a separate history application. Preserve direct links to saved runs and the most recent baseline/retest pair.
+Keep existing saved-run links, the bounded recent-run list, demo selector, and JSON report download. Legacy saved accessibility reports must open with original labels/version context, not website-health branding that implies new measurements. The existing v1 retest flow can remain on v1 reports; new v2 comparison controls are deferred until supported.
 
-The start view includes a broken/fixed demo selector with a preview link and direct audit button, plus the ten most recent saved runs with status, score and coverage. Finished reports offer a JSON download with evidence references; this is a local artifact, not automatic publication. Retest states and the action trail explicitly label recorded-replay or direct-URL reconstruction as system fallbacks.
+## Live evaluation
 
-## Live view hierarchy
+Show target, selected journey and safe endpoint, elapsed time, cancel control, source availability, and phase progress. Suggested phases: **Page measurements**, **Customer journey**, **Design review**, and **Preparing recommendations**. They may overlap; the interface must reflect actual execution rather than a fabricated linear animation or percentage.
 
-- Header: AccessBench, target origin, run lifecycle, elapsed time, cancel control.
-- Main area: live browser screenshot with actual capture time and current action text.
-- Adjacent area: phase, selected checkpoints, textual action trail, and emerging findings.
-- Results area: score and coverage together, five category cards, confirmed blockers, then findings.
+Display the latest Twinly/Playwright screenshot with capture time and actual action text. Separate Twinly proposals, executed actions, independent Playwright probes, and system recovery events. Google's Lighthouse session runs separately; the viewer shows our browser and cannot claim to stream Google's execution.
 
-On narrow screens, stack these regions in that order. Make the screenshot fit its container; provide optional enlargement with keyboard-accessible controls. Never crop away the target without retaining access to the full screenshot.
+Keep a readable textual trail with selected states and observed outcomes. Screenshots update after actual actions/probes; continuous video, remote control, and browser takeover are deferred. Announce disconnection/stale captures, preserve partial results after cancellation, and never present saved frames as live activity.
 
-The viewer updates after executed actions and important probe steps; it is not a promise of continuous video. Proposed actions must be distinguished from executed actions. Label phases **Twinly exploration**, **Keyboard checks**, **Other accessibility checks**, and **Evidence review**. Probe activity must not appear to be Twinly input.
+## Dashboard hierarchy
 
-Save the same frames/action records for an inspectable timeline. Do not implement remote mouse control, browser takeover, or video recording for MVP. Show connection loss and stale capture times clearly. Cancellation preserves collected evidence and ends in an honest partial/canceled report.
+- Concise evidence-derived takeaway and the most useful next steps, with confirmed customer blockers prominent. Keep AI suggestions visibly distinct from verified observations; preserve a deterministic summary when Gemma is unavailable.
+- Prominent website health score with **tested scope**, numeric availability, and provisional status attached to the score.
+- Scope summary: entry page and device strategy; one journey; states actually visited; source warnings.
+- Five category sections in order: Accessibility, Design & UX, SEO, Performance, Functionality.
+- Journey result: selected goal, safe endpoint, completed/blocked/partial/unavailable status, and passed/failed/unverified outcomes.
+- Prioritized issues and suggested improvements, with confirmed customer blockers prominent.
+- Expandable source diagnostics, including Lighthouse Best Practices, and the retained evidence trail.
 
-## Result language
+The audience is business owners and small teams. Lead issue wording with the observed problem and practical remedy; put audit IDs and implementation detail in expandable evidence.
 
-Example: **82/100 · Provisional · 68% planned-check coverage · 2 of 3 planned states audited**. These numbers are illustrative, never seeded production results.
+## Scores and qualitative results
 
-Keep coverage at the same visual prominence as the score. Include a text link explaining the denominator and sampled scope. Show **Not scored** and **Not applicable** instead of invented category numbers. Confirmed blockers get a visible text callout even when the overall number is high. Unscored/N/A category cards show their check-specific reasons beside the number. Run limitations list each blocked resource, its sanitized destination, reason and affected loaded-content scope. A persistent runtime status displays the loaded server revision/start time and warns when source changes require a restart or the loaded interface needs a reload.
+Design & UX shows **Qualitative review**, a short Gemma 4 summary, and evidence-linked findings. Do not show a numeric score, empty score ring, N/A score, or a manufactured pass. If Gemma 4 fails, show **Design review unavailable** with the reason and preserve other results.
 
-Use verdict labels **Passed**, **Failed**, **Needs review**, **Not tested**, and **Not applicable**, supported by icons/text rather than color alone. Category headings describe the actual tested slice: e.g. **Zoom and reflow — 320 px reflow tested; text resizing not tested**.
+The four numeric category cards show their source and scope. Accessibility, SEO, and Performance are Lighthouse scores; Functionality is based on the one observed journey. Unavailable values say **Not scored**, with the source-specific reason. Best Practices lives in supporting diagnostics rather than another top-level card.
 
-A finding shows: concise problem, confirmed/review status, affected interaction, evidence, expected versus observed outcome, related WCAG criterion, affected count, and a concrete remedy. Keep AI-estimated impact separate from verified facts; do not expose raw probabilities as an accuracy badge.
+Illustrative wording: **83/100 · Website health — tested scope · 4 of 4 numeric categories scored**. Design remains qualitative. For partial evidence: **77/100 · Provisional · 3 of 4 numeric categories scored · Journey unavailable**. Never seed these example numbers into production.
 
-Retest labels are **Resolved**, **Persistent**, **New**, and **Unverified**. Follow [scoring.md](scoring.md) before showing deltas or claiming a fix. Source snippets are illustrative guidance unless actual application source is available; the tool does not edit websites.
+Show journey assertion coverage separately, such as **3 of 4 planned outcomes verified**. Avoid the old generic coverage percentage as a whole-site claim. A 100 Functionality score with unresolved assertions still requires a provisional label and a partial journey status. Follow [scoring.md](scoring.md) for all denominator and rounding rules.
 
-## Visual defaults
+## Issue and recommendation language
 
-Use a calm developer-tool appearance: light background, dark text, blue accent, strong spacing, readable tables, and restrained borders. No sheriff imagery, mascot, decorative graphs, or animation-heavy scan sequence.
+Each issue includes concise title, category, source, verification state, actual observation, relevant URL/state/target, evidence, expected behavior, and a concrete next step. Show WCAG references only on relevant accessibility findings.
 
-The implementation keeps shared tokens in `public/styles/tokens.css`, component styles in `public/styles/components.css`, presentation templates in `public/components.js`, and transport/focus behavior in `public/app.js`. A later frontend skill can replace the visual design without changing the check engine or scoring.
+Use **Observed by automated checks**, **Verified journey outcome**, **Needs review**, and **AI suggestion** where appropriate. Gemma 4's suggested impact/priority is distinct from a confirmed defect. Do not promise ranking gains, conversion increases, compliance, or complete website correctness. One issue can link several source records without duplicate deductions.
 
-Suggested starting tokens: background `#F8FAFC`, surface `#FFFFFF`, text `#0F172A`, secondary text `#475569`, accent `#1D4ED8`, focus `#1D4ED8`. Start with a system font at 16 px, line height 1.5, and spacing steps 4/8/12/16/24/32 px. Verify actual component contrast and focus visibility rather than assuming tokens establish accessibility.
+Recommendation lists group practical next steps by urgency and category. Preserve a deterministic evidence-derived summary if Gemma 4 recommendations are unavailable; do not imply AI review succeeded. Blocked resources and source/URL differences have visible sanitized explanations.
 
-## Accessibility acceptance
+## Visual defaults and frontend boundaries
 
-- Semantic landmarks, sensible headings, skip link, labeled fields, and descriptive buttons/links.
-- Complete start, inspect, cancel, and retest flows by keyboard; visible focus and correct dialog/panel focus behavior.
-- Announce phase changes and completion through a polite status region. Do not announce every screenshot or flood the screen reader with action chatter.
-- Keep an accessible textual action log. Screenshots do not replace findings/reproduction text. Do not replace the focused control when live frames update.
-- Show form errors in text and associate them appropriately. Respect reduced motion; animations are optional.
-- Test the interface at 320 CSS pixels and 200% text enlargement even though audited-site text resizing is deferred.
-- No color-only severity/status encoding, inaccessible clickable cards, unexplained score rings, or chart-only evidence.
-- Run axe plus manual keyboard checks on the application's actual flows. A clean axe run alone is not acceptance.
+Use warm paper/ivory backgrounds, ink-colored text, oversized expressive headings, precise sans-serif interface text, generous space, restrained borders, and a single sharp electric-lime accent. Keep status colors paired with text labels. Browser imagery and evidence annotations should carry the visual identity. Exact colors, typefaces, and sizes are implementation defaults to choose and verify, not fixed accepted tokens; do not assume the lime accent is suitable for small text or focus indicators without contrast checks.
+
+Use motion to mark real evidence arriving: a captured frame, an executed action, or a verified outcome. Honor reduced motion and keep textual equivalents. Do not fabricate activity, smooth percentages, or a continuous browser stream.
+
+Preserve shared tokens in `public/styles/tokens.css`, component styles in `public/styles/components.css`, presentation templates in `public/components.js`, routing/transport/focus in `public/app.js`, and semantic structure in `public/index.html`. The existing slate/blue tokens describe the current implementation and are superseded as the target visual direction. Retain readable body text (16 px default), comfortable line height (1.5 default), and a consistent spacing scale. Verify actual contrast and focus behavior. No design-system or framework migration is required for the overhaul.
+
+## Interface acceptance
+
+- Semantic landmarks, headings, skip link, labeled inputs, descriptive controls, and keyboard-accessible issue details.
+- Complete start, inspect, cancel, saved-report, and existing retest flows by keyboard; preserve focus during updates and on closing a dialog.
+- Polite announcements for phase/completion changes, without reading every screenshot or log line aloud.
+- Equivalent textual evidence, associated form errors, reduced-motion support, and no color-only meaning.
+- Stack cards/viewer/trail at narrow widths; fit screenshots without losing access to their full content. Test the app at 320 CSS pixels and 200% text enlargement.
+- Run axe and manual keyboard checks on actual application views. A clean automated scan alone is insufficient.

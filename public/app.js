@@ -6,6 +6,11 @@ import {
   findingRow,
   actionLine,
   findingDetail,
+  healthCategoryCard,
+  designCard,
+  journeyPanel,
+  recommendationList,
+  sourceDiagnostics,
 } from "./components.js";
 const $ = (id) => document.getElementById(id);
 let token = sessionStorage.getItem("accessbench-token") || "",
@@ -21,6 +26,8 @@ let token = sessionStorage.getItem("accessbench-token") || "",
   opener,
   requestInFlight = false;
 const seenPhases = new Set();
+const websiteRun = (value) =>
+  value?.manifest?.versions?.schema === "website-evaluation-v2";
 let clientFingerprint;
 function showRuntime(info) {
   if (!info) {
@@ -127,7 +134,7 @@ async function loadRecent() {
     setHTML(
       "recent-audits",
       recent.length
-        ? `<ol class="recent-list">${recent.map((item) => `<li><a href="#run/${escape(item.id)}">${escape(item.url)}</a><p class="subtle">${escape(item.status)} · ${escape(new Date(item.createdAt).toLocaleString())}${item.baselineRunId ? " · Retest" : ""}${item.summary ? ` · ${item.summary.score === null ? "Not scored" : `${round(item.summary.score)}/100`}${item.summary.provisional ? " · Provisional" : ""} · ${item.summary.coverage === null ? "Coverage N/A" : `${round(item.summary.coverage)}% coverage`}` : " · Results pending"}</p></li>`).join("")}</ol>`
+        ? `<ol class="recent-list">${recent.map((item) => `<li><a href="#run/${escape(item.id)}">${escape(item.url)}</a><p class="subtle">${escape(item.status)} · ${escape(new Date(item.createdAt).toLocaleString())}${item.baselineRunId ? " · Retest" : ""}${item.summary ? ` · ${item.summary.score === null ? "Not scored" : `${round(item.summary.score)}/100`}${item.summary.provisional ? " · Provisional" : ""} · ${item.summary.numericTotal ? `${item.summary.numericAvailable} of ${item.summary.numericTotal} numeric categories scored` : item.summary.coverage == null ? "Coverage N/A" : `${round(item.summary.coverage)}% coverage`}` : " · Results pending"}</p></li>`).join("")}</ol>`
         : '<p class="subtle">No saved audits yet. Start with the demo site or a public URL.</p>',
     );
   } catch (error) {
@@ -233,7 +240,7 @@ function receive(items) {
     }
     if (event.type === "action.executed")
       $("current-action").textContent =
-        `Executed by Twinly: ${event.payload.action.reason}`;
+        `Playwright executed Twinly action: ${event.payload.action?.reason || event.payload.action?.type || "interaction"}`;
     if (event.type === "action.blocked")
       $("current-action").textContent =
         `Blocked by action policy: ${event.payload.reason}`;
@@ -265,6 +272,37 @@ function connect() {
   };
 }
 function render() {
+  const v2 = websiteRun(run);
+  $("run-title").textContent = v2
+    ? "Website evaluation"
+    : "Accessibility benchmark";
+  $("report-version").textContent = v2
+    ? "Website evaluation v2 · one page and one journey"
+    : "Legacy accessibility report · original scoring and scope";
+  $("score-label").textContent = v2
+    ? "Website health score — tested scope"
+    : "AccessBench accessibility score";
+  $("coverage-label").textContent = v2
+    ? "Numeric categories scored"
+    : "Planned-check coverage";
+  $("score-explanation").textContent = v2
+    ? "The health score averages available Accessibility, SEO, Performance, and Functionality scores equally. Lighthouse measures one entry-page load; Functionality uses conclusive outcomes from one journey. Design & UX is qualitative and does not change scores. Missing categories or unresolved journey outcomes make the score provisional. This is tested scope, not a percentage of your website checked."
+    : "Each check is counted once per selected state. Category scores summarize conclusive passes and failures; the overall score averages scored categories equally. Coverage averages each applicable category’s conclusive checks divided by planned checks. Review and untested checks reduce coverage. Proven inapplicability is excluded. Missing evidence never becomes a pass.";
+  $("source-progress").hidden = !v2;
+  if (v2)
+    setHTML(
+      "source-progress",
+      [
+        ["pagespeed", "Page measurements"],
+        ["twinly", "Customer journey"],
+        ["gemini", "Design review"],
+      ]
+        .map(
+          ([id, label]) =>
+            `<div class="source-status"><strong>${label}</strong><span>${escape(run.providers?.[id] || "pending")}</span></div>`,
+        )
+        .join(""),
+    );
   $("run-target").textContent = run.url;
   $("lifecycle").textContent = run.status;
   if (done(run.status))
@@ -278,6 +316,10 @@ function render() {
     $("frame-status").textContent =
       `${done(run.status) ? "Saved capture" : "Latest actual capture"} · ${new Date(run.latestFrame.capturedAt).toLocaleTimeString()} · ${run.latestFrame.viewport.width} × ${run.latestFrame.viewport.height} CSS px${!done(run.status) && Date.now() - Date.parse(run.latestFrame.capturedAt) > 15000 ? " · Waiting for a newer frame" : ""}`;
     void loadFrame(run.latestFrame).catch(() => {});
+  } else {
+    $("frame-status").textContent = done(run.status)
+      ? "No browser capture was retained for this run."
+      : "Waiting for the first captured frame.";
   }
   setHTML(
     "checkpoints",
@@ -288,44 +330,95 @@ function render() {
       )
       .join(""),
   );
-  if (run.summary) {
-    const s = run.summary;
+  if (v2) {
+    const summary = run.summary;
+    const categories = summary?.categories || [
+      { id: "accessibility", name: "Accessibility", score: null },
+      { id: "seo", name: "SEO", score: null },
+      { id: "performance", name: "Performance", score: null },
+      { id: "functionality", name: "Functionality", score: null },
+    ];
     $("overall-score").textContent =
-      s.score === null ? "No score yet" : `${round(s.score)}/100`;
+      summary?.score == null
+        ? "No score available"
+        : `${round(summary.score)}/100`;
     $("overall-coverage").textContent =
-      s.coverage === null ? "Not applicable" : `${round(s.coverage)}%`;
+      `${summary?.numericAvailable || 0} of 4`;
     $("conclusive").textContent =
-      `${s.conclusive} / ${s.eligible} conclusive planned checks`;
-    $("provisional").textContent = s.provisional
-      ? "Provisional"
-      : "Bounded plan complete";
+      `${summary?.conclusive || 0} of ${summary?.eligible || 0} planned journey outcomes verified${summary?.journeyCoverage == null ? "" : ` · ${round(summary.journeyCoverage)}% assertion coverage`}`;
+    $("provisional").textContent =
+      !summary || summary.provisional
+        ? "Provisional"
+        : summary.reportPartial
+          ? "Partial report"
+          : "Tested scope complete";
+    const card = (id) =>
+      healthCategoryCard(
+        categories.find((c) => c.id === id) || { id, score: null },
+      );
     setHTML(
       "categories",
-      s.categories
-        .map((category) =>
-          categoryCard(
-            {
-              ...category,
-              checkIds:
-                category.checkIds ||
-                settings?.checks
-                  ?.filter((c) => c.category === category.id)
-                  .map((c) => c.id),
-            },
-            run.results,
-          ),
-        )
-        .join(""),
+      card("accessibility") +
+        designCard(run.sources?.design) +
+        card("seo") +
+        card("performance") +
+        card("functionality"),
     );
+    $("scope-description").textContent =
+      `Entry page: ${run.landedUrl || run.url}. Lighthouse: ${run.sources?.lighthouse?.strategy || "mobile"} page load in Google’s session. Journey: desktop 1280 × 800 CSS px, ${(run.manifest?.checkpoints || []).length} selected state(s), one non-submitting journey. Sources can observe different page states.`;
+    $("journey-result").hidden = false;
+    setHTML("journey-result", journeyPanel(run.journey));
+    $("recommendations").hidden = false;
+    setHTML("recommendations", recommendationList(run.sources?.design));
+    $("source-diagnostics").hidden = false;
+    setHTML(
+      "source-diagnostic-details",
+      sourceDiagnostics(run.sources?.lighthouse),
+    );
+  } else {
+    if (run.summary) {
+      const s = run.summary;
+      $("overall-score").textContent =
+        s.score === null ? "No score yet" : `${round(s.score)}/100`;
+      $("overall-coverage").textContent =
+        s.coverage === null ? "Not applicable" : `${round(s.coverage)}%`;
+      $("conclusive").textContent =
+        `${s.conclusive} / ${s.eligible} conclusive planned checks`;
+      $("provisional").textContent = s.provisional
+        ? "Provisional"
+        : "Bounded plan complete";
+      setHTML(
+        "categories",
+        s.categories
+          .map((category) =>
+            categoryCard(
+              {
+                ...category,
+                checkIds:
+                  category.checkIds ||
+                  settings?.checks
+                    ?.filter((c) => c.category === category.id)
+                    .map((c) => c.id),
+              },
+              run.results,
+            ),
+          )
+          .join(""),
+      );
+    }
+    $("scope-description").textContent =
+      `${run.manifest.checkpoints.filter((c) => c.reconstructed !== false).length} of ${run.manifest.checkpoints.length} planned states reconstructed. Exploration ${run.explorationComplete ? "finished normally" : run.explorationStop || "in progress"}. Keyboard checks cover selected interactions; reflow uses 320 CSS pixels.`;
+    $("journey-result").hidden = true;
+    $("recommendations").hidden = true;
+    $("source-diagnostics").hidden = true;
   }
-  $("scope-description").textContent =
-    `${run.manifest.checkpoints.filter((c) => c.reconstructed !== false).length} of ${run.manifest.checkpoints.length} planned states reconstructed. Exploration ${run.explorationComplete ? "finished normally" : run.explorationStop || "in progress"}. Keyboard checks cover selected interactions; reflow uses 320 CSS pixels.`;
   const blockers = run.findings.filter((f) => f.blocker);
   $("blockers").textContent = blockers.length
     ? `${blockers.length} confirmed essential-task blocker(s).`
     : "No confirmed essential-task blockers in this sample. Individual failures and uncertainty remain visible below.";
-  $("triage-status").textContent =
-    `Twinly: ${run.providers.twinly}. Decisions triage: ${run.providers.decisions}. Estimated impact never changes scores.`;
+  $("triage-status").textContent = v2
+    ? "Measurements and verified outcomes are shown separately from AI suggestions. Suggested priority does not change measured scores."
+    : `Twinly: ${run.providers.twinly}. Decisions triage: ${run.providers.decisions}. Estimated impact never changes scores.`;
   setHTML(
     "findings",
     run.findings.length
@@ -341,13 +434,15 @@ function render() {
   );
   setHTML(
     "check-results",
-    run.results
+    (run.results || [])
       .map(
         (r) =>
           `<div class="check-row"><strong>${escape(r.checkId)} · ${escape(r.checkpointId)} · ${escape(verdict(r.status))}</strong><p class="subtle">${escape(r.reason)}</p></div>`,
       )
       .join(""),
   );
+  $("check-results-details").hidden = v2 && !run.results?.length;
+  wireEvidenceButtons();
   const networkDetails = run.networkLimitations?.length
     ? `<h3>Blocked resources and affected scope</h3><ul>${run.networkLimitations.map((item) => `<li><strong>${escape(item.resourceType || item.kind)}</strong> · ${escape(item.destination)}<p>${escape(item.reason || item.kind)}. ${escape(item.affectedChecks || "Checks cover loaded content only.")}</p></li>`).join("")}</ul>`
     : "";
@@ -355,12 +450,12 @@ function render() {
     "errors",
     `${run.errors.length ? `<h3>Run limitations</h3><ul>${run.errors.map((e) => `<li>${escape(e)}</li>`).join("")}</ul>` : ""}${networkDetails}`,
   );
-  $("retest-form").hidden = !done(run.status);
+  $("retest-form").hidden = v2 || !done(run.status);
   $("download-report").hidden = !done(run.status);
   if (!$("retest-url").value) $("retest-url").value = run.url;
   $("use-fixed").hidden = !settings || !run.url.includes("/fixtures/");
-  $("comparison").hidden = !run.comparison;
-  if (run.comparison) {
+  $("comparison").hidden = v2 || !run.comparison;
+  if (!v2 && run.comparison) {
     $("comparison-summary").textContent = run.comparison.comparable
       ? `Matching manifest${run.comparison.delta === null ? "" : ` · score change ${run.comparison.delta >= 0 ? "+" : ""}${round(run.comparison.delta)}`}`
       : "Not directly comparable. Scope reconstruction or manifest differs; no score delta is shown.";
@@ -418,17 +513,53 @@ async function showFinding() {
   $("finding-detail").innerHTML = findingDetail(finding);
   if (!$("finding-dialog").open) $("finding-dialog").showModal();
   $("close-finding").focus();
-  for (const id of finding.evidenceIds.slice(0, 4)) {
+  for (const id of (finding.evidenceIds || [])
+    .filter((id) => /^frame-/.test(id))
+    .slice(0, 4)) {
     try {
       const response = await api(`/api/audits/${runId}/evidence/${id}`),
         url = URL.createObjectURL(await response.blob());
       const img = document.createElement("img");
       img.src = url;
-      img.alt = `Stored evidence for ${finding.checkId} at ${finding.checkpointId}; details in the observations.`;
+      img.alt = `Stored browser evidence for ${finding.title}; details in the observations.`;
       img.onload = () => URL.revokeObjectURL(url);
       $("finding-images").append(img);
     } catch {}
   }
+}
+function wireEvidenceButtons() {
+  document.querySelectorAll("[data-evidence]").forEach((button) => {
+    button.onclick = async () => {
+      opener = button;
+      const id = button.dataset.evidence;
+      $("finding-dialog").dataset.key = "";
+      $("finding-title").textContent = "Recorded evidence";
+      $("finding-detail").replaceChildren();
+      const description = document.createElement("p");
+      description.textContent = id;
+      $("finding-detail").append(description);
+      if (!$("finding-dialog").open) $("finding-dialog").showModal();
+      $("close-finding").focus();
+      if (!/^frame-[a-f0-9-]+$/.test(id)) {
+        description.textContent = `Source record: ${id}. Open source diagnostics or download the JSON report for details.`;
+        return;
+      }
+      const activeRun = runId;
+      try {
+        const response = await api(`/api/audits/${activeRun}/evidence/${id}`);
+        if (activeRun !== runId || !$("finding-dialog").open) return;
+        const url = URL.createObjectURL(await response.blob());
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt =
+          "Actual captured browser state; its observation is described in the report.";
+        img.onload = () => URL.revokeObjectURL(url);
+        $("finding-detail").append(img);
+      } catch (error) {
+        description.textContent = `Evidence unavailable: ${error.message}`;
+      }
+    };
+  });
 }
 function closeFinding() {
   if ($("finding-dialog").open) $("finding-dialog").close();
@@ -438,6 +569,10 @@ function closeFinding() {
     [...document.querySelectorAll("[data-finding]")]
       .find((e) => e.dataset.finding === key)
       ?.focus();
+  else if (opener?.dataset.evidence)
+    document.querySelectorAll("[data-evidence]").forEach((button) => {
+      if (button.dataset.evidence === opener.dataset.evidence) button.focus();
+    });
 }
 $("close-finding").onclick = closeFinding;
 $("finding-dialog").addEventListener("cancel", (event) => {

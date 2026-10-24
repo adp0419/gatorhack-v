@@ -4,9 +4,9 @@ import path from "node:path";
 import os from "node:os";
 import { createApp } from "../../src/server.js";
 import { FileStore } from "../../src/store.js";
-import { runAudit } from "../../src/runner.js";
+import { runAudit, newRun } from "../../src/runner.js";
 
-export async function testApp(startRunner) {
+export async function testApp(startRunner, createRun = newRun) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "accessbench-browser-"));
   const store = new FileStore(dir),
     server = http.createServer();
@@ -27,6 +27,7 @@ export async function testApp(startRunner) {
     store,
     port,
     startRunner: startRunner || offlineRunner,
+    createRun,
   });
   server.on("request", app);
   return {

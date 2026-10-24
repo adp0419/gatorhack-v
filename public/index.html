@@ -13,23 +13,68 @@
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
       <a class="brand" href="#">AccessBench</a
-      ><span class="subtle">A bounded accessibility benchmark</span>
+      ><span class="subtle">Website evaluation, with evidence</span>
     </header>
     <main id="main">
       <section id="start-view" aria-labelledby="start-title">
         <div class="intro">
-          <p class="eyebrow">Inspect. Understand. Retest.</p>
-          <h1 id="start-title">See where access breaks.</h1>
+          <p class="eyebrow">Measure. Observe. Improve.</p>
+          <h1 id="start-title">
+            Understand your website. Know what to improve.
+          </h1>
           <p>
-            Watch a real browser explore your site. Inspect measured findings
-            across five categories, then verify a fix.
+            Page measurements, one observed customer journey, and practical
+            recommendations in one clear report.
           </p>
         </div>
+        <form id="start-form" class="panel">
+          <label for="target-url">Website URL</label>
+          <div class="input-row">
+            <input
+              id="target-url"
+              name="url"
+              type="url"
+              required
+              placeholder="https://example.com"
+              aria-describedby="target-help form-error"
+            /><button type="submit" id="start-button">Evaluate website</button>
+          </div>
+          <p id="target-help" class="subtle">
+            One entry page and one automatically selected journey, with up to
+            three observed states. Public evaluations stop before submissions or
+            purchases. URLs and captured evidence are shared with Google
+            PageSpeed Insights, Twinly, and Gemma through Google’s Gemini API as
+            needed. Runs locally in an isolated browser.
+          </p>
+          <p id="form-error" class="error" role="alert"></p>
+          <div id="token-row" hidden>
+            <label for="access-token">Demo access token</label
+            ><input
+              id="access-token"
+              type="password"
+              autocomplete="off"
+            /><button id="unlock" type="button">Connect</button>
+          </div>
+          <div id="demo-targets" class="button-row"></div>
+          <p id="configuration" class="subtle"></p>
+        </form>
+        <div class="scope-grid" aria-label="Five categories">
+          <p>Accessibility</p>
+          <p>Design &amp; UX</p>
+          <p>SEO</p>
+          <p>Performance</p>
+          <p>Functionality</p>
+        </div>
+        <p class="subtle">
+          Results describe the tested scope. Design &amp; UX is qualitative. An
+          evaluation does not establish whole-site correctness or WCAG
+          conformance.
+        </p>
         <section class="panel demo-panel" aria-labelledby="demo-title">
           <h2 id="demo-title">Try the demo site</h2>
           <p>
-            Compare a prepared broken site with its fixed version using the same
-            audit engine.
+            Explore the local broken and fixed fixtures. Google cannot measure
+            local pages, so their Lighthouse scores remain unavailable.
           </p>
           <form id="demo-form" aria-describedby="demo-error">
             <fieldset class="demo-choices">
@@ -52,45 +97,6 @@
             <p id="demo-error" class="error" role="alert"></p>
           </form>
         </section>
-        <form id="start-form" class="panel">
-          <label for="target-url">Website URL</label>
-          <div class="input-row">
-            <input
-              id="target-url"
-              name="url"
-              type="url"
-              required
-              placeholder="https://example.com"
-              aria-describedby="target-help form-error"
-            /><button type="submit" id="start-button">Start audit</button>
-          </div>
-          <p id="target-help" class="subtle">
-            Up to three states, selected keyboard interactions, and 320 px
-            reflow. Public sites receive non-submitting checks.
-          </p>
-          <p id="form-error" class="error" role="alert"></p>
-          <div id="token-row" hidden>
-            <label for="access-token">Demo access token</label
-            ><input
-              id="access-token"
-              type="password"
-              autocomplete="off"
-            /><button id="unlock" type="button">Connect</button>
-          </div>
-          <div id="demo-targets" class="button-row"></div>
-          <p id="configuration" class="subtle"></p>
-        </form>
-        <div class="scope-grid" aria-label="Five categories">
-          <p>Keyboard operation</p>
-          <p>Forms and validation</p>
-          <p>Text contrast</p>
-          <p>Structure and semantics</p>
-          <p>Zoom and reflow</p>
-        </div>
-        <p class="subtle">
-          Results describe the tested sample. They do not establish whole-site
-          WCAG conformance. Dedicated text resizing is outside this benchmark.
-        </p>
         <section class="recent-audits" aria-labelledby="recent-title">
           <h2 id="recent-title">Recent audits</h2>
           <p class="subtle">
@@ -104,12 +110,13 @@
       <section id="run-view" hidden aria-labelledby="run-title">
         <div class="run-heading">
           <div>
-            <p class="eyebrow">Audit workspace</p>
-            <h1 id="run-title">Website audit</h1>
+            <p class="eyebrow">Evaluation workspace</p>
+            <h1 id="run-title">Website evaluation</h1>
             <p id="run-target" class="wrap"></p>
+            <p id="report-version" class="subtle"></p>
           </div>
           <button id="cancel-button" class="secondary" type="button">
-            Cancel audit
+            Cancel evaluation
           </button>
         </div>
         <div class="run-meta">
@@ -117,6 +124,11 @@
           ><span id="elapsed"></span
           ><span id="connection" class="subtle">Connecting…</span>
         </div>
+        <div
+          id="source-progress"
+          class="source-progress"
+          aria-label="Evaluation sources"
+        ></div>
         <div class="workspace">
           <section class="panel viewer" aria-labelledby="viewer-title">
             <div class="section-heading">
@@ -145,7 +157,8 @@
           <aside class="panel activity" aria-labelledby="trail-title">
             <h2 id="trail-title">Action trail</h2>
             <p class="subtle">
-              Twinly exploration and independent probes are labeled separately.
+              Twinly proposals, Playwright execution, and independent checks are
+              labeled separately. Lighthouse runs in a separate Google session.
             </p>
             <ol
               id="action-trail"
@@ -167,19 +180,19 @@
           <p id="download-error" class="error" role="alert"></p>
           <div class="metrics">
             <div class="panel">
-              <p>AccessBench score</p>
+              <p id="score-label">Website health score — tested scope</p>
               <strong id="overall-score">No score yet</strong>
             </div>
             <div class="panel">
-              <p>Planned-check coverage</p>
+              <p id="coverage-label">Numeric categories scored</p>
               <strong id="overall-coverage">Pending</strong>
               <p id="conclusive" class="subtle"></p>
             </div>
           </div>
-          <p id="scope-description" class="subtle"></p>
+          <p id="scope-description" class="subtle wrap"></p>
           <details>
-            <summary>What do score and coverage mean?</summary>
-            <p>
+            <summary>What does this score mean?</summary>
+            <p id="score-explanation">
               Each check is counted once per selected state. Category scores
               summarize conclusive passes and failures; the overall score
               averages scored categories equally. Coverage averages each
@@ -189,12 +202,27 @@
             </p>
           </details>
           <div id="categories" class="category-grid"></div>
+          <section
+            id="journey-result"
+            class="panel"
+            aria-labelledby="journey-title"
+            hidden
+          ></section>
+          <section
+            id="recommendations"
+            aria-labelledby="recommendations-title"
+            hidden
+          ></section>
           <p id="blockers" class="callout"></p>
           <h3>Findings</h3>
           <p id="triage-status" class="subtle"></p>
           <div id="findings"></div>
-          <details>
-            <summary>All check results</summary>
+          <details id="source-diagnostics" hidden>
+            <summary>Source diagnostics and Best Practices</summary>
+            <div id="source-diagnostic-details"></div>
+          </details>
+          <details id="check-results-details">
+            <summary>Supporting check results</summary>
             <div id="check-results"></div>
           </details>
           <div id="errors" class="error"></div>

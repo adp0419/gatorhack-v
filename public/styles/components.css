@@ -467,3 +467,80 @@ pre {
     padding: var(--space-4);
   }
 }
+
+/* Evaluation components share the same tokens as legacy report views. */
+.source-progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+.source-status {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.source-status span {
+  color: var(--color-muted);
+}
+.category {
+  overflow-wrap: anywhere;
+}
+.qualitative strong {
+  font-size: 1rem;
+}
+.qualitative summary {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.qualitative details {
+  margin-bottom: 0;
+}
+#journey-result,
+#recommendations {
+  margin: var(--space-6) 0;
+}
+.outcome-list,
+.recommendation-list {
+  padding-left: var(--space-6);
+}
+.outcome-list li,
+.recommendation-list li {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
+}
+.outcome-list li > .badge {
+  display: inline-block;
+  margin: var(--space-2);
+}
+.evidence-links {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+@media (max-width: 36rem) {
+  .source-progress {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
+.run-heading > * {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}

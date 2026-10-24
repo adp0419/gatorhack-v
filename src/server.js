@@ -8,13 +8,21 @@ import { config, terminal } from "./config.js";
 import { FileStore, validId } from "./store.js";
 import { validateStart, fixturePath } from "./policy.js";
 import { fixtureHtml } from "./fixtures.js";
-import { newRun, runAudit } from "./runner.js";
+import { newRun } from "./runner.js";
+import {
+  newWebsiteRun,
+  runEvaluation,
+  isWebsiteRun,
+  isLegacyRun,
+  interruptWebsiteRun,
+} from "./evaluation.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export function createApp({
   store = new FileStore(),
   port = config.port,
-  startRunner = runAudit,
+  startRunner = runEvaluation,
+  createRun = newWebsiteRun,
 } = {}) {
   const app = express(),
     running = new Map();
@@ -83,7 +91,12 @@ export function createApp({
         fixed: `${fixtureOrigin}/fixtures/fixed`,
         negative: `${fixtureOrigin}/fixtures/negative`,
       },
-      providers: { twinly: !!config.twinlyKey, decisions: !!config.openaiKey },
+      providers: {
+        twinly: !!config.twinlyKey,
+        pagespeed: true,
+        pagespeedKey: !!config.pagespeedKey,
+        gemini: !!config.geminiKey,
+      },
       hosting: "Public deployment not verified",
     }),
   );
@@ -114,13 +127,21 @@ export function createApp({
         if (!validId(req.body.baselineRunId))
           throw new Error("Invalid baseline run");
         baseline = await store.get(req.body.baselineRunId);
+        if (isWebsiteRun(baseline))
+          throw new Error(
+            "Website evaluation comparisons are not supported yet. Start a new URL evaluation.",
+          );
+        if (!isLegacyRun(baseline))
+          throw new Error("Unsupported baseline schema");
         if (!terminal(baseline.status))
           throw new Error("Baseline must have finished");
         const before = new URL(baseline.url);
         if (before.origin !== target.origin)
           throw new Error("Retest must use the baseline origin");
       }
-      const run = newRun(target.href, fixtureOrigin, baseline?.id);
+      const run = baseline
+        ? newRun(target.href, fixtureOrigin, baseline.id)
+        : createRun(target.href, fixtureOrigin);
       await store.save(run);
       const controller = new AbortController();
       running.set(run.id, controller);
@@ -177,6 +198,7 @@ export function createApp({
         );
         run.explorationComplete = false;
         if (run.summary) run.summary.provisional = true;
+        interruptWebsiteRun(run, "Local runner interrupted before completion.");
         await store.save(run);
       }
       res.json(run);
@@ -264,6 +286,11 @@ export function createApp({
       else {
         run.status = "canceled";
         run.explorationComplete = false;
+        interruptWebsiteRun(run, "Canceled after the local runner stopped.");
+        if (run.summary) {
+          run.summary.provisional = true;
+          if (isWebsiteRun(run)) run.summary.reportPartial = true;
+        }
         await store.save(run);
       }
       res.status(202).json({ status: "canceling" });

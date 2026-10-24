@@ -1,69 +1,64 @@
-# MVP
+# Website evaluation MVP
 
-Owner of product scope. Check mechanics live in [checks.md](checks.md); numerical rules live in [scoring.md](scoring.md).
+Owner of scope and accepted product decisions. Implementation progress is in [status.md](status.md); evaluation mechanics in [checks.md](checks.md); numerical policy in [scoring.md](scoring.md).
 
 ## Thesis
 
-**AccessBench checks a defined slice of website accessibility, shows its exploration and evidence, and makes improvement measurable after a fix.**
+**AccessBench helps businesses understand how well a website attracts, serves, and supports customers through automated measurements, one observed customer journey, and actionable AI recommendations.**
 
-The primary user is a developer or small team that needs actionable findings. This is a website benchmark across five categories, rather than a benchmark of AI agents. A selected interaction supplies useful evidence, but does not replace the five-category audit.
+The primary audience is business owners and small teams. Reports explain problems and practical improvements in plain language, with technical evidence available on demand. Accessibility remains one of five categories. The two-builder, 48-hour hackathon remains a planning constraint; this pivot is a reprioritization, not proof that the expanded MVP already exists or fits the remaining time.
 
 ## Accepted decisions
 
+The user's updated direction and follow-up answers on 2026-10-23 supersede the accessibility-only product contract.
+
+The subsequent model choice is **Gemma 4 via Google's Gemini API**, replacing the earlier Gemini-model default. The qualitative role and evidence/score boundaries remain the same. Default hosted model: `gemma-4-26b-a4b-it`; environment names remain `GEMINI_API_KEY` and `GEMINI_MODEL` because the transport is Google's Gemini API.
+
 | Area | Decision |
 |---|---|
-| Team and time | Two builders; 48-hour hackathon |
-| Standards | Bounded checks mapped to selected WCAG 2.2 A/AA criteria |
-| Categories | Keyboard; forms; contrast; semantics; zoom/reflow |
-| Exploration | Automatic selection of accessibility-relevant interactions |
-| Navigation | Same-origin navigation permitted; maximum three audited states |
-| Future extension | Optional user-directed goal can later replace automatic selection |
-| Agent | Twinly computer-use next-action loop directs the walkthrough |
-| Viewer | Live browser screenshots and actual action progress |
-| Evidence authority | Deterministic assertions confirm results; uncertain findings need review |
-| Decisions | Ambiguity classification and impact prioritization, separate from scoring |
-| Scores | Overall 0–100 and five category score slots, with coverage |
-| Incomplete audits | Provisional scores remain visible where conclusive evidence exists |
-| N/A categories | Excluded; remaining scored categories weighted equally |
-| Scoring unit | One defined check per audited state, not one point per element |
-| Forms | Active validation only on controlled or explicitly authorized test sites |
-| Keyboard depth | Selected interactions, rather than every control |
-| Reflow | 320 CSS-pixel width; dedicated text resizing deferred |
-| Demo | Broken/fixed controlled site plus a real public site; same engine |
-| Centerpiece | Pointer-operable navigation with an evidenced keyboard barrier, then verified fix |
-| Deployment | Vercel + Sandbox target; local runner retained |
+| Categories | Accessibility; Design & UX; SEO; Performance; Functionality |
+| Automated source | Lighthouse through Google's PageSpeed Insights API |
+| Lighthouse mapping | Accessibility, SEO, and Performance supply their corresponding numeric scores; Best Practices supplies supporting diagnostics |
+| Journey | One automatically selected customer journey per website evaluation; no goal-entry UI |
+| Navigation | Twinly computer-use decisions executed by Playwright; same-origin, maximum three selected states including initial |
+| Design & UX | Gemma 4 qualitative assessment only; no numeric design score |
+| Recommendations | Gemma 4 interprets evidence and suggests improvements, keeping observations and hypotheses separate |
+| Overall score | Four numeric categories; Design & UX remains visible and excluded from numeric scoring |
+| Public-site behavior | Non-submitting checks; stop before purchases, sending forms, account changes, and other committing actions |
+| Evidence | Actual screenshots/action trail; independently verified journey outcomes; source attribution |
+| Runtime | Local Node first; deployment deferred under the existing user direction |
+| Branding | Keep AccessBench as the existing product and code name; “Access Bench” in the brief refers to the same product |
 
-The exact check registry, budgets, data structures, storage choice, and visual styling are defaults specified in the other documents. Provider access and deployment are not assumed proven.
+Device profiles, score weights, budgets, and assertion details in owner documents are engineering defaults, not additional user promises.
 
-## User flow
+## Core experience
 
-1. Enter a public website URL and start an audit. A configured test target may also permit active validation.
-2. Watch Twinly inspect and operate the real browser. See the currently tested URL, phase, and scope.
-3. Inspect five-category results, overall score, coverage, confirmed blockers, and review findings.
-4. Open a finding for its screenshot, observed behavior, relevant criterion, reproduction steps, and suggested remedy.
-5. Apply a fix outside AccessBench. Retest against the same manifest and inspect comparable results.
+1. Paste a public URL and start an evaluation. Explain the bounded scope and non-submitting behavior next to the input.
+2. Collect a Lighthouse report for the entry page. Twinly chooses one relevant customer journey, such as finding a service and reaching its inquiry form, and navigates the real browser.
+3. Watch real action screenshots, progress, and a textual trail. The chosen goal and safe endpoint are visible.
+4. Receive an overall health score, five category sections, journey outcome, prioritized issues, and suggested improvements. Design & UX is a qualitative section; the other four categories can have numeric scores.
+5. Open an issue for evidence, source, observed behavior, and a practical remedy. Reopen the saved report or download its JSON.
 
 ## Must ship
 
-- A working local end-to-end audit and public Vercel + Sandbox deployment after feasibility verification. A local-only fallback leaves the public deployment requirement incomplete.
-- Current execution order (user, 2026-10-23): run the local Node MVP first; deployment is deferred until the local MVP is ready. The public hosting target remains a follow-up requirement.
-- A real Twinly-driven exploration, visible while it runs; three-state maximum, not a requirement to fabricate three states.
-- Every category represented by the bounded registry, with honest result states.
-- At least one real Decisions request whose answer affects triage or ordering in the report.
-- Deterministic scoring, coverage, and explicit category-unavailable/N/A displays.
-- A finding inspector and retained action/evidence timeline.
-- Same-scope retest with resolved, persistent, new, and unverified findings distinguished.
-- A controlled broken/fixed fixture and a smoke audit of an actual public site.
-- An interface usable by keyboard, with equivalent text for all meaningful visuals.
+- One local end-to-end run using actual PageSpeed Insights, Twinly computer use, and Gemma 4 responses. Each integration needs a successful recorded live call; a mock is insufficient.
+- Entry-page Lighthouse Accessibility, SEO, Performance, and Best Practices results, preserving source and configuration.
+- Exactly one selected journey, with independently checked outcomes and an honest completed/blocked/partial/unavailable result. A safe endpoint is stated before execution; sending or purchasing is never implied by reaching a form or checkout.
+- Qualitative Gemma 4 design review and evidence-linked recommendations across available sources. Keep measured facts and AI suggestions distinct.
+- Five-category dashboard, versioned four-category health scoring, visible score availability and limitations, issue details, live frames/trail, cancellation, persistence, and graceful provider failure.
+- Keep the interface usable by keyboard and at narrow widths, and preserve browser/network guards.
+- Controlled examples and a genuine public-site smoke evaluation through the same pipeline. Use a public controlled fixture for live PageSpeed verification; Google's hosted service cannot read the local fixture server.
 
 ## Scope boundaries
 
-Do not build user accounts, billing, a whole-domain crawler, authenticated audits, CAPTCHA handling, automated production submissions, automatic code edits, scheduled monitoring, or comprehensive assistive-technology simulation.
+Evaluate the entry page plus a bounded journey, not every page or customer path. Form labels, navigation, and reaching a form may be checked publicly; submitting it is outside public mode. Authorized client-only test recipes can exercise validation without changing production data.
 
-Dedicated 200% text resizing, exhaustive keyboard traversal, video/VNC streaming, manual browser takeover, goal-entry UI, cross-browser testing, full history management, and a vanilla-versus-React benchmark are deferred. The MVP retains the evidence required to reopen a run and compare one retest. A bounded recent-run list and local JSON report download were added with the demo workflow improvements; broader history and export formats remain deferred.
+Do not add accounts, billing, authenticated browsing, CAPTCHA handling, purchases, production submissions, automatic code edits, whole-site crawling, scheduled monitoring, keyword research, backlink analysis, conversion analytics, or security penetration testing. Do not promise improved revenue, search rankings, WCAG conformance, or correctness of all buttons/forms.
 
-## Product success
+No numeric Design & UX score, user-entered journey, multiple journeys, mandatory desktop-and-mobile Lighthouse pair, or exhaustive keyboard testing in this MVP. Browser text-resizing tests of audited sites remain deferred. Existing detailed accessibility probes may provide supporting findings; completing all eleven legacy checks at every state is no longer the broad MVP's release gate.
 
-The same engine must demonstrate a genuine pointer/keyboard discrepancy, preserve evidence, and verify its removal after a developer-applied fix. The public-site run must produce honest bounded results without fixture-specific detection logic.
+Preserve existing saved runs, comparison logic, recent-run links, and JSON export. New website-health retest comparisons are a follow-up after the core evaluation works; legacy accessibility comparisons must retain their original meaning. Deployment is also a follow-up, not a local acceptance gate.
 
-A successful audit does not establish that an entire site meets WCAG. Report exactly which checks, states, samples, and viewport conditions were exercised.
+## Success criteria
+
+A business user can see the tested scope, understand the main evidenced problems, follow practical recommendations, and distinguish automated measurements from AI opinion. One genuine journey is visible and its reported outcome matches browser evidence. Missing providers leave useful partial results with explicit limitations. The team can demonstrate the live integrated pipeline without fabricated scores or scripted provider activity.

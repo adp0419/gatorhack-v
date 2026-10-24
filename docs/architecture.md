@@ -1,117 +1,107 @@
 # Architecture and integration contracts
 
-Owner of runtime boundaries, provider integration, storage, and browsing restrictions. These are engineering defaults; feasibility gates live in [status.md](status.md).
+Owner of provider boundaries, runtime/storage, application data contracts, and browsing restrictions. The local v2 pipeline is implemented; [status.md](status.md) distinguishes isolated verification from live provider acceptance. Application schemas below are not provider response schemas.
 
-## Runtime shape
+## Local-first pipeline
 
 ```text
-Vanilla frontend on Vercel
-  -> short Node API: validate request, create run, start runner, return run ID
-  -> status/events/evidence API: read durable artifacts, stream or poll updates
-
-Vercel Sandbox runner (or local Node/Express runner)
-  -> Playwright browser + axe + custom probes
-  -> screenshot/history -> Twinly computer use -> proposed action
-  -> action guard -> Playwright execution -> next screenshot/checkpoint
-  -> structured evidence -> OpenAI Decisions -> triage annotations
-  -> pure scoring/comparison functions -> persisted report
+Vanilla frontend -> local Node/Express API -> versioned evaluation runner
+  -> validate target and resolve public landing URL
+  -> PageSpeed Insights -> entry-page Lighthouse measurements
+  -> Playwright screenshot -> Twinly next action -> guard -> execution
+     -> one selected journey, maximum three states, verified outcomes
+  -> collected screenshots + measurements + journey evidence
+     -> Gemma 4 qualitative design review + recommendations
+  -> validated source results -> pure scoring -> persisted report/events
+  -> live screenshots/action trail and final five-category dashboard
 ```
 
-Twinly owns exploratory action selection. Our backend owns the loop, execution restrictions, checkpoint budget, and measurements. Deterministic keyboard probes are explicitly separate from the agent walkthrough. Do not label those probes as Twinly actions.
+PageSpeed and journey execution may run independently after target validation, within the same run deadline. Gemma 4 can assess collected evidence even if one source fails. Never lose successful source results because another provider times out. Provider availability, report completeness, journey completion, and numeric completeness are separate concepts.
 
-## Modules
+## Module migration
 
-| Boundary | Responsibility |
-|---|---|
-| Exploration policy | Automatic audit objective now; optional `goal` later; checkpoint selection |
-| Twinly adapter | Provider request/response validation; no direct scoring |
-| Executor and recorder | Translate actions, enforce restrictions, capture real outcomes |
-| Check engine | Versioned assertions and normalized evidence/verdicts |
-| Decisions adapter | Evidence-based triage; no browser execution or verdict promotion |
-| Scoring/comparison | Pure functions over persisted results/manifests |
-| Run/event store | Append events, store images and reports, resume UI reads |
-| Transport/UI | Start/cancel/status/events/evidence; accessible presentation |
+| Boundary | Existing reusable pieces | Target change |
+|---|---|---|
+| Configuration/providers | `src/config.js`, `src/providers.js`; working Twinly adapter | Add PageSpeed/Gemma adapters and validated source availability; retire Decisions from new runs |
+| Browser/policy | `src/browser.js`, `src/policy.js`, `src/timeouts.js` | Preserve guards and coordinate execution; verify outcomes for the chosen journey |
+| Evaluation | `src/runner.js`, `src/checks.js`, `src/registry.js` | Version the five-category pipeline; retain selected accessibility probes as supporting evidence |
+| Scores/findings | `src/scoring.js`, `src/findings.js` | Four-source health score, qualitative design, evidence-linked recommendations |
+| Artifacts/transport | `src/store.js`, `src/server.js` | Persist new source reports/versions; reuse events, polling, cancellation, evidence and authentication |
+| Presentation | `public/app.js`, `public/components.js`, `public/styles/` | Five business-facing category sections with source, scope, and partial states |
+| Legacy comparison | `src/retest.js`, `src/reconstruction.js` | Keep v1 semantics; reject unsupported v2 comparisons until implemented |
 
-The proposed request is `{ url, goal?: string, baselineRunId?: string }`. There is no goal input in the MVP interface. Never let a client assert that a target is authorized for active testing.
+Split provider modules if useful; exact new filenames are implementation choices. Keep external adapters separate from pure assertion/scoring logic.
 
-## Twinly computer use
+The implemented boundaries are `src/evaluation.js` (new-run orchestration and schema dispatch), `src/website-sources.js` (Google adapters/validation), `src/journey.js` (selection/execution/assertions), and `src/health-scoring.js` (pure v2 scoring). `src/runner.js` and `src/scoring.js` retain the legacy pipeline. Supporting initial-page axe and selected-control keyboard/reflow results never alter Lighthouse scores.
 
-Use cloud `POST /v1/computer/next-action`, model `twinly-core`, with server-side bearer authentication. Current documented API base: `https://advktwnedlgnhswpxokg.supabase.co/functions/v1/twinly-api/v1`. Keep the base configurable and verify it against official docs before implementation. User reports having API access; no live call has been verified here.
+The URL-only application start request remains `{ url }`; new runs use `website-evaluation-v2`. The existing `baselineRunId` path applies only to `accessbench-v1` retests. Unknown execution schemas and v2 baselines are rejected. Do not expose authorization flags or a user-goal field. Saved v1 reports retain their original scoring and labels.
 
-Request: required `goal` (up to 2000 characters) and base64 `screenshot` (PNG/JPEG/WebP, up to 4 MB); optional `previous_screenshot`, chronological action-object `steps`, and visible `elements`. The docs allow up to 50 step objects and use the last 20; strings are invalid. Element centers use the same normalized coordinates as actions.
+## PageSpeed Insights / Lighthouse
 
-Response: `action` with type, applicable action fields, `reason`, and `commits`; response also identifies coordinates as `0-1000`. Supported types include `click`, `double_click`, `type`, `key`, `scroll`, `wait`, `done`, and `fail`.
+Use Google's hosted **PageSpeed Insights API v5**, the concrete interpretation of “Google Lighthouse API” in the brief. The official endpoint is `GET https://www.googleapis.com/pagespeedonline/v5/runPagespeed`, with `url`, repeated `category` parameters for `accessibility`, `seo`, `performance`, `best-practices`, and explicit `strategy=mobile` as the MVP default. No request body. See the [official request/response reference](https://developers.google.com/speed/docs/insights/v5/reference/pagespeedapi/runpagespeed).
 
-Twinly returns an action; it does not execute the browser or supply the live viewer. Our loop performs the action, captures the resulting browser, and calls again. Mac `/v1/tasks` and chat completions are different products and are not substitutes for this integration.
+Read `lighthouseResult.categories`, `audits`, `requestedUrl`, `finalUrl`, `fetchTime`, `lighthouseVersion`, configuration, warnings, and runtime errors through a validated adapter. Retain raw JSON privately. Missing/null/malformed scores and runtime failures remain unavailable under [scoring.md](scoring.md). Google's managed Lighthouse version can change; persist it rather than pretending it is pinned locally.
 
-Convert coordinates using the actual screenshot dimensions and its scale relative to the CSS viewport. Prefer viewport screenshots without resizing; use device scale 1. Clamp to valid pixel indices. Store normalized coordinates, executed CSS coordinates, screenshot size, and any reliably matched DOM target. Never mix full-page screenshot coordinates with viewport clicks.
+Call only for a validated public URL without credentials or sensitive values. Keep the API key server-side and out of request logs/errors. Configuration: `PAGESPEED_API_KEY`, `GEMINI_API_KEY`, and `GEMINI_MODEL`. PageSpeed permits a keyless attempt, subject to Google's quota; the pipeline conservatively skips URLs with query values or fragments. The adapter independently rejects potentially sensitive query keys and private DNS. Gemma 4 uses the Gemini API REST `generateContent` endpoint with inline JPEGs. The user chose Gemma 4; `gemma-4-26b-a4b-it` is the default variant (`gemma-4-31b-it` is also documented as hosted). `GEMINI_API_KEY` and `GEMINI_MODEL` retain their names because the API transport remains Gemini. Record the configured model and actual returned model version on success.
 
-Automatic objective: inspect the current site for high-value accessibility interactions, prioritizing main navigation, then a relevant dialog or form, while respecting the state/action budgets. Twinly chooses the actions; use novelty and DOM metadata to select distinct audited checkpoints. Do not pre-script the demo route.
+Google fetches the URL from its own environment and does not inherit the local browser session, viewport, cookies, request guards, or dynamic state. Validate its returned final URL against the expected public scope before merging scores. This check cannot enforce our per-hop network policy inside Google's service; disclose source differences. Do not send private/local fixture URLs to PageSpeed or claim it tested a Twinly interaction. Use a public controlled fixture to verify the full integration. Local fixture reports may have Lighthouse unavailable; do not substitute invented measurements or expose local services through an ad hoc tunnel.
 
-Default engineering budgets: 12 Twinly calls, 180 seconds for exploration, 30 seconds per provider request within the remaining budget, and a 300-second total runner deadline. These are limits, not promised latency. Record and version them; calibrate after the first real runs. Bound each checkpoint’s checks to 90 seconds and its keyboard probe to 45 seconds; close affected pages on timeout, retain completed measurements, and mark remaining checks not tested. New probe pages inherit 5-second operation and 15-second navigation timeouts. Stop on budget, cancellation, `done`, `fail`, a committing action, or three consecutive rejected actions. Feed rejected non-committing proposals and executor reasons back to Twinly so it can select another safe action within the original budgets. Keep rejected proposals out of checkpoint replay setup; preserve them in provider history and the action trail. Never invent additional states to reach three.
+CrUX/field-data integration and automatic local-Lighthouse fallback are deferred. One mobile scan per run keeps cost/scope bounded. The [PageSpeed overview](https://developers.google.com/speed/docs/insights/v5/about) distinguishes lab scores from field observations.
 
-For a retest, also stop successfully as soon as all baseline checkpoints and their required pointer interactions have been reconstructed. Record this as a system policy event, not a Twinly `done` response. Ignore extra targets outside the frozen sample when selecting keyboard/reflow probes.
+## Twinly and the one-journey loop
 
-If Twinly stops before reconstruction is complete, try the baseline's recorded setup actions, followed by its same-origin URL without credentials or query parameters. For a checkpoint reached after navigation, also try its observed URL with only trailing page-local actions to reopen menus or dialogs. These are labeled system fallbacks, never Twinly exploration. Verify the stored URL/widget signature, relocate each frozen pointer target, execute it through the existing action guard, and verify the observed outcome before including it in the sample. Persist the recovered setup URL/actions for independent probes. Failed state reconstruction and missing sampled interactions remain unresolved and suppress a comparable delta. Cancellation and the total runner deadline also stop fallbacks.
+Retain the working cloud computer-use adapter. Its existing contract uses `/computer/next-action`, server-side authentication, screenshot/history input, an action response, and normalized `0-1000` coordinates. Recheck [Twinly's official computer-use docs](https://www.twinly.tech/docs/developer-api#computer) before changing any wire fields. The v2 implementation retains those wire fields; actual new live results are recorded in status.
 
-## OpenAI Decisions
+The backend owns goal/scope policy, loop, guards, assertion plan, budgets, and recordings. Twinly chooses exploratory actions, not scores. Do not add invented `journey`, `assertions`, or success fields to the provider response. Mac tasks/chat are not replacements for this computer-use loop.
 
-Use `POST https://api.openai.com/v1/decisions` with `gpt-6-luna`. Current documentation supports text/images/JSON evidence and named `predicate`, `choice`, and `score` questions. Verify concrete SDK and request schemas before implementation; use the official SDK or validated HTTP calls rather than an invented wrapper.
+Implemented selection default: derive bounded candidate objectives from visible same-origin, non-query links or explicitly associated reveal controls, then ask Twinly through the existing goal input to choose one. Map its initial proposed action to the current target identity, label and destination. Freeze that candidate's safe goal, endpoint, and three assertion units before executing the proposal. The assertions verify the selected control, destination/reveal, and relevant visible content. If the proposal cannot be mapped unambiguously, provide executor feedback within the call budget or report selection unavailable. Goals stay intentionally limited to one initial visible destination/reveal; multi-hop discovery and unsupported controls remain limitations. This is application policy, not a new Twinly API or scripted demo route.
 
-For one candidate finding, supply the structured observation, rule/check ID, expected/actual state, target metadata, and optional relevant screenshots. Define separate typed questions:
+After selection, keep that one goal for all subsequent actions. Validate proposals independently, execute allowed actions, and capture before/after screenshots and actual outcomes. `done` is a provider stop signal; Playwright still checks the planned outcomes. There is no second customer journey when the first is difficult. Same-goal recovery remains labeled and cannot silently revise the plan.
 
-- `evidence_state` (choice): `observed_barrier`, `ambiguous`, `insufficient`.
-- `impact_band` (choice): `low`, `moderate`, `high`, `critical`, `unclear`, with explicit observable definitions.
-- `needs_review` (predicate): whether the supplied evidence requires further assessment.
+Convert normalized coordinates using actual screenshot dimensions/scale and CSS viewport, preferably viewport screenshots at device scale 1 without resizing. Clamp pixel indices and retain normalized/executed coordinates plus target metadata. Do not mix full-page coordinates with viewport clicks. Existing default browser viewports are desktop 1280 × 800 and supporting narrow checks at 320 × 800 CSS pixels; they differ from Google's mobile emulation and must be labeled separately.
 
-Use exact categorical impact bands rather than rounding a probability-weighted score into a severity. Low means limited friction; moderate means substantial friction with an observed workaround; high means a major impediment; critical is a candidate essential-task blockage. A critical AI answer alone never creates a confirmed blocker.
+Retain existing loop bounds as starting defaults: 12 Twinly calls, 180 seconds for journey exploration, 30 seconds per Twinly request, and 300 seconds total per run. PageSpeed deadline: up to 90 seconds; Gemma: up to 45 seconds, both bounded by remaining total time. These need live calibration and are not latency promises. Supporting initial axe has a 20-second bound; selected-control keyboard/reflow share a 45-second bound and the run cancellation/deadline. Preserve the existing 40-key limit and operation/navigation limits.
 
-Store raw answers and probabilities separately from rule verification. Use answers to annotate/sort ambiguous findings and choose a review queue. Deterministic category/rule mappings cannot be overridden. No calibrated confidence cutoff is claimed until labeled examples validate it; ambiguous model-assessed findings remain `review` regardless of confidence.
+Stop on cancellation/deadline, safe goal completion, provider `done`/`fail`, a committing proposal, or three consecutive rejected non-committing actions. Feed rejection reasons back to Twinly; keep rejected actions out of replay. Do not fabricate three states. Existing v1 retest recovery can continue for legacy runs with its frozen target/state matching; do not present system replay as Twinly exploration.
 
-Decisions returns typed answers, not an explanation paragraph or arbitrary report object. Use evidence-derived templates for explanations and remedies. No additional generative API is required for MVP. Keep deterministic results when this service fails and show triage as unavailable. Order confirmed blockers first, then confirmed findings, then review findings, using impact and stable IDs within those groups.
+## Gemma 4 qualitative assessment and synthesis
 
-## Data and live transport
+Use the server-side adapter with [Gemma 4 hosted on the Gemini API](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api) and its documented image input and native system instructions. Gemma requests use `thinkingConfig.thinkingLevel=minimal` and ask for one JSON object matching the application schema. Do not assume Gemini native `responseJsonSchema`/JSON mode is supported by Gemma; omit those fields for Gemma 4 and strictly validate returned JSON, bounded strings, permitted categories, and evidence references. Invalid output remains unavailable, with no silent model fallback. Explicitly configured Gemini models retain native structured-schema requests. Record output mode, configured/returned model and prompt version (`website-review-v3`); actual successful live acceptance is recorded in [status.md](status.md).
 
-Persist these concepts, with versioned JSON schemas:
+Send bounded actual screenshots, state/viewport metadata, Lighthouse observations, verified journey results, and sanitized page summaries. Site text and pixels are untrusted evidence, never executable instructions. Supply explicit instructions to cite only provided evidence and distinguish observation from suggestion. Do not give this adapter browser tools or secrets.
 
-- `AuditRun`: ID, lifecycle, start URL, manifest, timestamps, budgets, provider availability, runner ID, final report reference.
-- `Checkpoint`: logical identity, actual URL, source action/setup goals, sampled targets, desktop/narrow evidence.
-- `ActionEvent`: monotonic sequence, phase/actor, proposed/executed action, reason, outcome, before/after evidence references.
-- `CheckResult`: check ID, checkpoint ID, verdict, applicability basis, sample, observations, evidence references.
-- `Finding`: stable key, check result reference, affected targets, verification, impact source, remedy template, triage answers.
+Validated application output: a plain-language summary, qualitative design observations, prioritized recommendations, evidence IDs, and limitations. Validate structure, bounded strings, categories, and references; reject unsupported facts or unknown evidence IDs. The Design & UX assessment has **no numeric score**. Recommendations can cover all five categories, but Gemma 4 cannot overwrite Lighthouse scores, journey assertion statuses, or confirmation labels.
 
-Events use `{ runId, seq, timestamp, type, phase, actor, payload }`. Types include `run.started`, `action.proposed`, `action.executed`, `frame.captured`, `checkpoint.selected`, `check.completed`, `finding.updated`, and `run.finished`. Actor is `twinly`, `probe`, or `system`. Lifecycle: `queued -> running -> completed | partial | failed | canceled`; lifecycle is separate from score provisionality.
+Persist model/prompt version, validated output, and sanitized failure state. If unavailable/refused/invalid, retain measured scores and deterministic evidence summaries with a visible missing-review status. No silent substitution of old Decisions output for Gemma. The configured Decisions credit issue is historical and ceases to be a release gate for the new MVP; its adapter can remain until migration clean-up.
 
-Write events/frames before announcing them. Display the latest actual frame with capture time. Stream SSE events with image references, not repeated large base64 images. Support reconnection from a sequence number and polling fallback. A stale/disconnected view must be labeled; the last screenshot must not masquerade as continuing activity.
+## Data, events, and storage
 
-Local storage can be files outside source control. Hosted storage default: private Vercel Blob for immutable event/frame/report objects and run snapshots, through one storage adapter. A single runner writes each run; use sequence IDs and deduplication. No relational database is required initially. Verify private reads and write-to-read latency in the deployment spike.
+Implemented schema family: `website-evaluation-v2`; score model: `website-health-v2`. Names below describe internal concepts, not provider fields:
 
-Vercel request handlers must not own a long-lived browser or rely on process memory/local disk for run persistence. Start the runner as an independent Sandbox process, persist its ID and launch acknowledgment, and stop it after final artifact persistence. Prove it continues after the start request returns. Status must detect runner death/deadline even if the runner cannot write a final event. Do not make a five-minute audit depend on a single frontend connection surviving.
+- Run/manifest: schema, score/prompt versions, start/landing URL, selected goal, frozen assertions, state/viewport/device scope, budgets, authorization mode, source versions/statuses, timestamps and artifacts.
+- Lighthouse measurement: raw response reference, actual requested/final URL, strategy, category scores/audits, warnings/errors, version and timing.
+- Journey: one ID, goal/safe endpoint, planned assertions, step/action evidence, observed outcomes and completion reason.
+- Design review/recommendation: qualitative text, source evidence links, priority estimate, model/prompt metadata and availability.
+- Report: numeric categories/availability, qualitative design review, composite/provisional flag, findings, limitations and evidence references.
 
-Suggested routes: `POST /api/audits`, `GET /api/audits/:id`, `GET /api/audits/:id/events`, `GET /api/audits/:id/evidence/:evidenceId`, and `POST /api/audits/:id/cancel`. These are application contracts, not existing endpoints.
+Reuse monotonic event sequences and write-before-announce persistence. Existing events carry `{ runId, seq, timestamp, type, phase, actor, payload }`; extend and version phase/type/actor allowlists for new sources rather than faking Twinly activity. Keep proposed/executed actions distinct. SSE reconnects from a sequence cursor; polling remains a fallback. Retain stale-view labels and detect interrupted runners.
 
-The local implementation also provides `GET /api/audits` (ten recent summaries) and `GET /api/audits/:id/report.json` (finished-run attachment). Both use the same API authentication boundary as status/evidence; they do not expose provider configuration or keys.
+Keep local atomic storage in ignored `.accessbench/` directories. Existing APIs include start/list/status, events, evidence, cancellation, and finished JSON download under `/api/audits`. Reuse them with versioned payloads instead of requiring a route rename. Keep one interface-launched run at a time and preserve API token checks and bounded recent summaries.
 
 ## Concrete browsing restrictions
 
-- Audit only public HTTP(S) targets. Reject credentials in URLs, unsupported ports/protocols, loopback/private/link-local/metadata destinations, and redirected or resolved equivalents. Cover IPv4/IPv6, subresource requests, popups, redirects, and DNS rebinding; URL string validation alone is insufficient. Enforce at the network layer where possible.
-- Resolve the initial HTTP redirect chain through the IP-pinned proxy, validating each destination before following it. Record the requested URL and landing URL; restrict subsequent agent top-level navigation to the validated landing origin. Authorized local fixtures cannot redirect to another origin. Resolve programmatic navigation with the context’s shared-cookie request client and `maxRedirects: 0`, validating each hop (maximum ten). Fulfill the buffered final response at its actual URL after committing landing scope, so same-origin embedded documents see the correct scope immediately. Pointer-triggered main-document redirects abort the native redirect and use the same resolver; capture waits for completion. Embedded-document redirects remain review limitations. `route.continue()` and fulfilled redirects alone do not guarantee interception of subsequent hops. Permit required public CDN/assets under the same private-network restrictions. Reject browser downloads and escape from the audit context.
-- Treat `commits: true` as a stop signal on public sites, and independently inspect actions; a false model flag is not authorization. Deny submissions including implicit Enter, destructive operations, account actions, and side-effectful navigation. Abort mutating requests in public mode and label any resulting limitations.
-- Cross-site login, passwords, sensitive values, CAPTCHAs, purchases, and production submissions remain outside scope. Isolate contexts; never reuse the developer's browser profile/cookies.
-- Keep provider/storage secrets outside audited page content and the frontend. Escape page-derived output. Do not publish screenshots by default.
-- Use a deployment demo token/capability and a bounded launch/concurrency policy before enabling a public paid runner; no user-account feature is needed. Permit only one concurrent audit initially. If safe arbitrary-URL browsing cannot be completed, publish a clearly labeled allowlisted demo, retaining the selected real public site.
+- Browser targets must be public HTTP(S) URLs on supported standard ports, without credentials. Reject loopback, private, link-local, metadata, and resolved/redirected equivalents across IPv4/IPv6. Validate DNS and pin upstream IPs through the existing public-network proxy; URL validation alone is insufficient.
+- Resolve initial HTTP redirects through the guarded proxy, validating every hop (maximum ten). Record start and landing URLs; commit landing scope before embedded documents load. Later top-level navigation stays on that origin. Authorized local fixtures cannot redirect to another origin.
+- Programmatic navigation uses the shared-cookie request client with `maxRedirects: 0` and buffered final response at the actual URL. Pointer main-document redirects use the bounded resolver. Preserve embedded-document redirect limitations. Allow required public CDN assets under private-network guards; block downloads, popups/escape, and private subresources. Follow [Playwright routing behavior](https://playwright.dev/docs/api/class-route#route-fetch).
+- Public tests are non-submitting. Treat `commits: true` as a stop signal and independently inspect every proposal. Block implicit Enter submission, mutating requests, purchases, sending forms, account/destructive actions, sensitive entry, and side-effectful navigation. A false provider flag or visitor URL entry is not authorization. Retain resulting limitations; request guards alone are not proof that every GET is harmless.
+- Active validation requires a server-configured authorized test origin and bounded client-only recipe. No new production-submission mode is introduced by the pivot.
+- Use isolated fresh contexts, no developer cookies/profile, no login/password/CAPTCHA workarounds. Keep provider/storage secrets outside page/UI content, escape audited HTML/text, sanitize errors/URLs, and store screenshots privately.
+- Public URLs and captured screenshots/evidence are sent to the named providers as needed. Explain this in the start-view scope notice; do not publish screenshots by default or send unrelated/private material.
 
-The local runner accepts public targets by default, behind the IP-pinned proxy and existing action/request restrictions. `AUDIT_PUBLIC_TARGETS=false` restores launch allowlisting via `AUDIT_ALLOWED_ORIGINS`. Binding beyond loopback still requires the demo token. This local capability does not verify hosted deployment feasibility.
+Public launch remains enabled locally under existing guards; `AUDIT_PUBLIC_TARGETS=false` restores configured-origin launch restrictions. Binding beyond loopback requires `ACCESSBENCH_DEMO_TOKEN`. Preserve the loaded-revision/start-time warnings and stale-source detection.
 
-## Official references
+## Deferred deployment
 
-Verified by reading during planning on 2026-10-23; real integration remains untested:
+Vercel + Sandbox remains a follow-up target, not a completed integration or required first migration step. Verify Chromium/runtime limits, independent runner survival after the launch request, cancellation/death detection, and private durable event/frame/report storage before deployment. A Vercel request must not own a long-lived browser or rely on request-local memory/disk. Keep the local runner working.
 
-- [Twinly computer-use contract](https://www.twinly.tech/docs/developer-api#computer).
-- [OpenAI Decisions guide](https://developers.openai.com/api/docs/guides/decisions).
-- [Vercel Sandbox](https://vercel.com/docs/sandbox), [Functions limits](https://vercel.com/docs/functions/limitations), and [streaming](https://vercel.com/docs/functions/streaming-functions).
-- [Vercel Blob SDK](https://vercel.com/docs/vercel-blob/using-blob-sdk).
-
-Navigation redirect handling follows the [Playwright routing contract](https://playwright.dev/docs/api/class-route#route-fetch), with automatic redirect following disabled during inspection.
-
-Safe site shortcuts `/` and `?` are permitted only outside editable fields; browser/system key combinations remain blocked. The configuration API reports the loaded revision, start time, instance and source fingerprint. It compares the loaded fingerprint with source files on disk, and the interface warns about stale server code or a mismatched loaded client. No credentials are included.
+Consult official [Sandbox](https://vercel.com/docs/sandbox), [Functions limits](https://vercel.com/docs/functions/limitations), and [Blob](https://vercel.com/docs/vercel-blob/using-blob-sdk) documentation at that spike. No hosting feasibility or live deployment was verified during this local implementation.

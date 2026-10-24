@@ -1,8 +1,17 @@
 # AccessBench
 
-A local accessibility benchmark with real Twinly browser exploration, independent Playwright/axe measurements, evidence, and same-manifest retests across five categories.
+AccessBench is a local AI-powered website evaluation platform for businesses: paste a URL, collect automated measurements, observe one customer journey, and review practical recommendations across **Accessibility, Design & UX, SEO, Performance, and Functionality**.
 
-The application runs with Node. Public deployment is deferred until the local MVP is ready. Live OpenAI Decisions triage is implemented but the configured account currently returns `429 credit_balance_exhausted`; deterministic checks and reports continue without it.
+**The v2 pipeline and dashboard are implemented, with successful live PageSpeed, Twinly and Gemma 4 responses in one public evaluation.** The latest report has all four numeric categories available and an 89/100 provisional health score; one journey outcome remains uncertain. Source availability and journey completion stay separate. See [current status](docs/status.md) and the [migration plan](docs/build-plan.md).
+
+## Updated product direction
+
+- **PageSpeed Insights / Lighthouse:** entry-page Accessibility, SEO, and Performance scores, plus supporting Best Practices diagnostics.
+- **Twinly + Playwright:** one automatically chosen, non-submitting customer journey with real browser screenshots and independently checked outcomes.
+- **Gemma 4 via Google’s Gemini API:** qualitative Design & UX review, interpretation, and evidence-linked recommendations. The user chose no numeric design score.
+- **Unified dashboard:** five category sections, four potential numeric scores, an overall website health score, journey result, issues, and improvements. Exact defaults and missing-data behavior live in [scoring.md](docs/scoring.md).
+
+Continue locally with Node; deployment remains deferred. Public tests stop before sending forms, purchases, or account/data changes. Reports describe a bounded page/journey sample, not full-site certification or guaranteed business results.
 
 ## Run locally
 
@@ -14,63 +23,44 @@ npx playwright install chromium
 npm start
 ```
 
-Open [AccessBench](http://127.0.0.1:3000). If `.env` does not already exist, copy `.env.example` and configure `TWINLY_KEY` and `OPENAI_API_KEY`. Keep credentials server-side. `npm run dev` restarts on source edits; restarting interrupts an active audit, so use `npm start` for the demo.
+Open [AccessBench](http://127.0.0.1:3000). Copy `.env.example` to `.env` if needed and configure `TWINLY_KEY`, `GEMINI_API_KEY`, and `PAGESPEED_API_KEY`. Gemma 4 is hosted by the Gemini API, so the key remains `GEMINI_API_KEY`. `GEMINI_MODEL` defaults to `gemma-4-26b-a4b-it`; the model remains configurable through the same API. A keyless PageSpeed request is supported but subject to Google's quota. Keep keys server-side. `OPENAI_API_KEY` is only used by legacy accessibility retests and legacy spike/rehearsal commands.
 
-Choose **Broken website**, then **Audit the demo site**. The selector also lets you preview or audit the fixed version directly. Twinly selects browser actions; the runner records actual screenshots and independently checks the selected states. After the run, use **Use the prepared fixed fixture** and **Retest same manifest**. The site fix is a prepared developer change, not an automatic code edit by AccessBench.
+The interface supports URL-only evaluations, actual frames/action trails, a frozen safe journey plan and independent outcomes, five report sections, qualitative design review, four-category scoring, findings, ten recent runs, cancellation, and JSON download. Styling remains vanilla CSS with shared tokens and reusable components. Local broken/fixed fixtures exercise browser evidence; Google cannot measure local URLs. AccessBench does not modify audited sites.
 
-Enter a public HTTP(S) URL on a standard port to audit it. Private destinations remain blocked through DNS validation and an IP-pinned browser proxy; navigation stays on the starting origin and public forms are never submitted. Set `AUDIT_PUBLIC_TARGETS=false` to restrict launches to the comma-separated `AUDIT_ALLOWED_ORIGINS` setting instead. Only the built-in, client-only validation recipe is authorized for active form testing. Entering a URL never authorizes submission.
+Artifacts live under ignored `.accessbench/` directories. Saved reports open at `/#run/<run-id>`. Keep Node running for audits/evidence access. Use `npm run dev` for automatic backend restart during development; restarting interrupts active audits. With `npm start`, restart Node after backend changes and reload the browser after frontend changes. Loaded revision/start-time warnings help identify stale code.
 
-Artifacts live in ignored `.accessbench/` directories. The start view links to the ten most recent saved runs. Saved reports reopen at `/#run/<run-id>`, with addressable finding links and retained frames. Finished runs offer **Download JSON report**, including the manifest, results, comparison and evidence references. The local Node process must remain running for an audit to continue. The interface labels saved captures and connection loss.
+Private destinations stay blocked through DNS validation and the IP-pinned browser proxy. Starting URLs may redirect to a validated public landing origin; later navigation stays on that origin. Public forms are never submitted. `AUDIT_PUBLIC_TARGETS=false` restores launch restrictions through `AUDIT_ALLOWED_ORIGINS`. Binding beyond loopback requires `ACCESSBENCH_DEMO_TOKEN`. Only server-configured client-only test recipes authorize active fixture validation.
 
-Retests try Twinly reconstruction first. If required states or sampled interactions remain missing, the runner tries recorded replay and then a same-origin baseline URL, labeling these as system fallbacks in the trail. State signatures and actual pointer outcomes must match; missing targets remain unverified and prevent a comparable score delta.
-
-## Commands
+## Current commands
 
 ```sh
-npm test                 # Scoring, verdicts, guards, retest matching, persistence
-npm run test:browser     # Self-contained Chromium fixtures, API and interface checks
-npm run check            # JavaScript syntax and local Markdown links
-npm run format:check     # Formatting
-npm run spike            # Real Twinly action and Decisions request; spends provider usage
+npm test                 # Legacy + v2 scoring, sources, verdicts, guards, persistence
+npm run test:browser     # Isolated Chromium fixtures, API and interface checks
+npm run check            # JavaScript syntax and top-level local Markdown links
+npm run format:check     # Source formatting
+npm run spike            # Real PageSpeed + fixture Twinly/Gemma feasibility; uses credits
 npm run audit -- https://example.com
 npm run audit -- http://127.0.0.1:3000/fixtures/fixed <baseline-run-id>
-npm run rehearse         # Two real broken/fixed pairs through the running local API
+npm run spike:legacy     # Historical Twinly + Decisions spike; uses credits
+npm run rehearse         # Legacy accessibility broken/fixed pairs; uses credits
 ```
 
-Browser tests use isolated temporary storage and deliberate provider outages; they never substitute test-provider actions into the product or spend API credits. Live spike/audit/rehearsal commands call the configured providers. Rehearsals record their real run IDs and outcomes in `.accessbench/rehearsals.json`.
+`audit` starts v2 by default; a finished v1 baseline keeps the legacy retest pipeline. V2 comparisons are rejected until supported. `spike` tests a public PageSpeed URL (default example.com) separately from a controlled local Twinly/Gemma journey, saves actual artifacts, and exits nonzero if a required provider or endpoint is unverified. Use `npm run audit -- https://your-public-site.example` for a full public run through the same pipeline. Browser tests use isolated harness providers, do not spend credits, and do not count as live integration evidence.
 
-## Frontend upgrade path
+## Implementation boundaries
 
-The frontend is vanilla HTML/CSS/JavaScript. A later frontend skill can restyle these files without changing the benchmark engine:
+Reuse browser/policy, Twinly execution, storage, transport, and accessible presentation. Adapt providers, runner, checks/registry, scoring/findings, and dashboard contracts under new versions; keep legacy retest semantics. Frontend boundaries remain `public/index.html`, `public/app.js`, `public/components.js`, and `public/styles/`. No framework migration is required.
 
-| File | Responsibility |
-|---|---|
-| `public/styles/tokens.css` | Color, typography, spacing, radius and width tokens |
-| `public/styles/components.css` | Responsive component styles and focus treatment |
-| `public/components.js` | Escaped presentation components and result wording |
-| `public/app.js` | Routes, transport, viewer updates and focus handling |
-| `public/index.html` | Semantic page structure and labeled controls |
-
-Backend boundaries are `providers`, `browser`/`policy`, `checks`/`registry`, `scoring`/`retest`, `findings`, `store`, and `runner`. The Express API implements start, status, sequenced events (SSE plus polling), evidence reads and cancellation. One audit runs at a time through the interface. Binding beyond loopback requires `ACCESSBENCH_DEMO_TOKEN`; the browser prompts for that token without exposing provider keys.
-
-## Scope and limitations
-
-Scores summarize conclusive checks in the declared sample, with equal category weights. Coverage, uncertainty, N/A categories and blockers are separate. Unmeasured work is never a pass; a high provisional score can have low coverage. Results are not WCAG certification or a measure of whole-site accessibility.
-
-Keyboard probes cover selected interactions. Reflow uses 320 CSS pixels; browser/text resizing of audited sites is deferred. Complex layouts and unproved responsive equivalence remain review. Disappeared targets and failed reconstruction remain unverified; score deltas require comparable manifests. Findings can be positively resolved in a matched checkpoint even if another checkpoint is unavailable.
+Existing accessibility reports keep their original five subcategories and score formula. They must not be relabeled as broader website health reports or compared numerically across score versions. New v2 retest UI is deferred behind the core evaluation pipeline.
 
 ## Documentation
 
-- [Current status and verification](docs/status.md)
-- [MVP](docs/mvp.md)
-- [Check registry and evidence](docs/checks.md)
-- [Scoring and comparison](docs/scoring.md)
-- [Architecture and browsing restrictions](docs/architecture.md)
-- [Interface design](docs/design.md)
-- [Build plan and demo](docs/build-plan.md)
+- [Current status and verified work](docs/status.md)
+- [Updated MVP and accepted decisions](docs/mvp.md)
+- [Evaluation scope and evidence](docs/checks.md)
+- [Health scoring and comparison policy](docs/scoring.md)
+- [Architecture, providers, and browsing restrictions](docs/architecture.md)
+- [Dashboard and report design](docs/design.md)
+- [Migration order, acceptance, and demo](docs/build-plan.md)
 
-Coding agents should begin with [AGENTS.md](AGENTS.md).
-
-Public start URLs may redirect to a validated public landing origin (for example, a bare domain to its `www` host). AccessBench records this change in the action trail and restricts exploration to the landing origin. Private destinations and later cross-origin navigation remain blocked.
-
-During development, use `npm run dev` to restart Node automatically after source edits. With `npm start`, restart Node after backend changes and reload the browser after frontend changes. The interface displays the loaded server revision/start time and warns when the server or client code is stale.
+Coding agents should begin with [AGENTS.md](AGENTS.md). Historical verification and the legacy accessibility check/scoring contracts are linked from the status and owner documents.

@@ -1,80 +1,90 @@
-# Check registry and evidence
+# Evaluation checks and evidence
 
-Owner of test scope, verdicts, and WCAG references. Initial checklist version: `accessbench-v1`. This is a proposed implementable baseline, not a complete WCAG evaluation.
+Owner of evaluation scope, verdicts, journey verification, and evidence. New evaluation schema family: `website-evaluation-v2`. Numerical rules belong to [scoring.md](scoring.md). The existing eleven-check accessibility registry is preserved in [the v1 archive](history/accessibility-v1-checks.md) for old results and supporting probes. The initial implementation chooses one visible same-origin destination or explicit reveal control and freezes three outcome units; broader multi-hop goal discovery remains limited.
 
-## Units and verdicts
+## Five category contracts
 
-A checkpoint is a selected page/UI state with a logical ID, actual URL, setup history, relevant DOM/control identities, and screenshot. Keep at most three audited checkpoints, including the initial state. Intermediate action frames are evidence, not automatically additional audited checkpoints.
+| Category | MVP evaluation | Boundary |
+|---|---|---|
+| Accessibility | Entry-page Lighthouse accessibility results; available selected-interaction keyboard, naming, and reflow evidence as supporting findings | Automated subset; no WCAG certification or full screen-reader claim |
+| Design & UX | Gemma 4 reviews captured states for clarity, navigation, hierarchy, readability, consistency, and visible friction | Qualitative opinion grounded in supplied evidence; no numeric score or user-study claim |
+| SEO | Entry-page Lighthouse SEO results, retaining audit IDs and observations | Technical page checks; no ranking, keyword, backlink, or full-indexing assessment |
+| Performance | Entry-page Lighthouse performance category and returned lab metrics/diagnostics | One configured page-load run; no blanket real-user responsiveness claim |
+| Functionality | One Twinly-selected journey, with safe observable outcomes verified by Playwright | Selected journey only; no claim to test every control or complete production transactions |
 
-Each registered check has one result per checkpoint. Per-element observations attach to that result; they do not create more scoring units. Reflow measurements are variants of a checkpoint, not additional checkpoint slots.
+Best Practices is supporting Lighthouse evidence. Keep its source score/audit details in the report's diagnostic section, without treating it as a sixth category or as proof that customer journeys work. Link findings to their source audit/result. Group duplicate observations by category, audit/assertion, and target while preserving provenance; multiple detectors do not create extra score deductions.
 
-| Status | Meaning |
+## Lighthouse scope
+
+Request accessibility, SEO, performance, and best-practices explicitly for the validated entry/landing URL. Default strategy: **mobile**, one run per evaluation. Twinly's existing desktop viewport remains separately labeled; mobile Lighthouse does not establish that the desktop journey works on mobile. Mandatory paired mobile/desktop runs are deferred.
+
+Retain requested/final URL, strategy, fetch time, Lighthouse version/configuration, source scores, audits, warnings, and runtime errors. If the provider lands outside the validated scope, retain the discrepancy as a limitation and do not merge that page's scores into the evaluation. A Lighthouse scan measures its own page load, not Twinly's later menu/dialog states.
+
+Expose available metrics such as LCP, CLS, FCP, Speed Index, and Total Blocking Time using their actual returned IDs/units. Do not rename Total Blocking Time as INP or present lab metrics as field data. Real-user Core Web Vitals/CrUX are deferred; no MVP dependency on their availability.
+
+Provider manual/informative/inapplicable/error audits remain distinguishable. An empty violations list or a successful HTTP response alone never establishes full accessibility, SEO effectiveness, or successful page measurement.
+
+## One automatic customer journey
+
+1. Inspect the initial page. Twinly chooses a relevant, safe objective from observed content: for example, finding a service and reaching its contact form, locating pricing, or navigating to a product detail page.
+2. Persist the goal, why it is relevant, the observable safe endpoint, and a bounded plan of normally 3–5 assertion units before executing the journey. Site-derived plans must pass server-side validation and must not include submissions. The initial inspection is part of this one journey, not an extra exploration pass.
+3. Use at most three selected states including the initial page. Intermediate screenshots/actions do not create more scored states. The number of outcomes is independent of the state limit; a state can support several outcomes.
+4. Twinly chooses each action. The executor records what actually happened. Playwright checks stable URL, visible content/control state, and safe interaction effects against the planned outcomes.
+5. Stop at the safe endpoint, policy boundary, provider stop, cancellation, or budget. Keep the one selected goal even if it fails. Recovery within the same goal is permitted; do not choose an easier second journey or delete failed assertions to improve the score.
+
+For an informational page with little interaction, allow a smaller honest plan with at least one explicit assertion; show its reduced scope. If no useful safe objective can be selected, report journey unavailable and retain other sources.
+
+Example inquiry journey: verify that the service navigation is available, that the chosen service page loads with expected content, and that its inquiry form can be reached with visible named fields. Expected outcomes must be specific enough to reject an error page or unrelated URL. This proves reaching the form, not sending a message or receiving backend delivery. Unexpected new assertions may be advisory in this run or require a new versioned plan; never silently change the scored denominator after observing failure.
+
+## Verdicts and journey outcomes
+
+| Assertion status | Meaning |
 |---|---|
-| `passed` | All specified observations within the stated sample conclusively satisfy the assertion |
-| `failed` | Deterministic evidence conclusively falsifies the scoped assertion |
-| `review` | Observed evidence is ambiguous or the assertion cannot be conclusively evaluated |
-| `not_tested` | Execution skipped, blocked, unsupported, or timed out |
-| `not_applicable` | Applicability was actually assessed and the assertion genuinely does not apply |
+| `passed` | Independent observations positively satisfy the expected safe outcome |
+| `failed` | Reproducible browser evidence contradicts the expected outcome |
+| `review` | Ambiguous evidence or uncertain target/state equivalence |
+| `not_tested` | Skipped, blocked, unsupported, timed out, or provider/executor stopped |
+| `not_applicable` | Applicability was actually assessed and positively ruled out |
 
-Preserve incomplete observations even if another observation establishes an aggregate failure. Passing a scoped sample says nothing about unsampled controls or other WCAG requirements.
+Report journey outcome separately from assertion scores:
 
-## Scored checklist
+- **Completed:** safe endpoint and all applicable required assertions positively verified.
+- **Blocked:** a reproducible website defect prevents the selected safe objective; retain the observed failure and affected assertion.
+- **Partial:** some work is unverified, canceled, blocked by policy, or stopped by infrastructure/provider failure. Identify the cause. A policy stop is not a confirmed website defect.
+- **Unavailable:** no usable plan or journey evidence could be established. Preserve initial observations if available.
 
-All rows below have equal weight within their category. Each row is deliberately narrower than the referenced WCAG criterion.
+A click being dispatched, a Twinly `done` action, or Gemma 4's explanation is not proof of an achieved outcome. A timeout alone is not a functional defect or keyboard barrier. HTTP error responses, console messages, and failed requests need relevance to an observed expected outcome before being labeled customer blockers. Reproduce suspected defects from an equivalent source state when possible; otherwise retain review status.
 
-| ID | Category | Assertion and boundary | Related WCAG |
-|---|---|---|---|
-| K01 | Keyboard | Selected pointer-interaction targets can be reached through an established keyboard path from the equivalent initial state. An exhausted search alone is `review`. | 2.1.1 |
-| K02 | Keyboard | Keyboard activation of selected targets produces the expected safe state change. Use appropriate keys for the control; unresolved widget behavior is `review`. | 2.1.1 |
-| F01 | Forms | Supported inputs expose programmatic accessible names; retain actual name evidence. This alone does not establish visible-label/instruction quality. | 1.3.1, 4.1.2 |
-| F02 | Forms | In an authorized validation test, an observed error identifies the invalid field and problem in text. Unsupported validation behavior is `not_tested`; unclear meaning is `review`. | 3.3.1 |
-| F03 | Forms | The observed validation error has an appropriate programmatic field/group relationship where that relationship is required. Missing `aria-describedby` alone is not proof of failure. | 1.3.1 |
-| C01 | Contrast | axe conclusively evaluates supported visible text against applicable AA thresholds and exceptions. Preserve measured colors/ratio when available. | 1.4.3 |
-| S01 | Semantics | Supported buttons and links have accessible names. Input names belong to F01, avoiding duplicate scoring of the same input-label rule. | 4.1.2; 2.4.4 where relevant |
-| S02 | Semantics | Supported images meet programmatically testable text-alternative requirements. Nonempty alt text is not automatically appropriate; decorative treatment may need review. | 1.1.1 |
-| S03 | Semantics | Supported ARIA attributes, required roles, and relationships satisfy the frozen axe rule subset. | 1.3.1, 4.1.2 |
-| R01 | Reflow | At 320 CSS-pixel width, investigated content reflows without loss or non-exempt two-dimensional scrolling. Raw overflow is only a candidate finding. | 1.4.10 |
-| R02 | Reflow | Selected important controls remain available and operable at narrow width, including a legitimate responsive replacement. Hidden desktop controls alone are not failures. | 1.4.10 |
+## Gemma 4 qualitative assessment
 
-Suggested viewports: desktop `1280 × 800`, narrow `320 × 800`, CSS pixels, device scale 1. Record these as versioned configuration. Do not implement text resizing using CSS zoom and call it a verified browser/text-resize test.
+Supply actual screenshots from selected states, URL/viewport/state metadata, a bounded DOM/text summary, Lighthouse observations, and the verified journey log. Request concise evidence-linked observations under these review dimensions:
 
-## axe adapter
+- Purpose, primary action, and next-step clarity.
+- Navigation labels, orientation, and discoverability.
+- Visual hierarchy, readability, and spacing.
+- Consistency and visible state/feedback clarity.
+- Observed journey friction and concrete opportunities for improvement.
 
-- Pin the package/browser versions. Freeze an explicit rule-ID allowlist and check mapping in code before scoring fixtures.
-- Start with form label/name rules for F01, `color-contrast` for C01, button/link-name rules for S01, image-alt rules for S02, and a documented supported ARIA-validity subset for S03. Verify IDs against the pinned release rather than guessing availability.
-- Additional axe findings can be shown as advisory evidence; they do not silently expand the scored registry.
-- Per check/state: any decisive mapped violation yields `failed`; otherwise unresolved mapped results yield `review`; otherwise applicable mapped passes yield `passed`; only conclusively inapplicable results yield `not_applicable`.
-- If the engine did not run or the mapping is unsupported, use `not_tested`. An empty violations array alone does not establish a pass.
-- Store raw rule IDs and affected nodes. Escape HTML excerpts in the interface.
+The report includes a plain-language summary, qualitative findings, and prioritized recommendations with relevant evidence IDs and suggested remedies. Suggested business impact is a hypothesis, never measured conversion uplift. Do not infer hidden states, backend success, mobile usability, or user preferences from a screenshot. If a dimension lacks evidence, say it was not assessed. No numeric score, confidence badge, or inferred pass/fail is required for design.
 
-## Keyboard evidence
+Validate structured output, category names, bounded text, and evidence references. Unknown IDs, unsupported claims, refusal, invalid JSON, and provider failure must not become validated findings. Keep measured facts in their original records; AI cannot edit source values or promote ambiguous functional/accessibility evidence to confirmed failure.
 
-1. Capture the source checkpoint, selected control identity, pointer action, and resulting state.
-2. Restore an equivalent source state in an isolated probe context. Setup may use prior recorded actions, but the measured interaction begins from an explicit reset and uses keyboard input only.
-3. Record every key and focused element. Probe recognized paths with Tab/Shift+Tab and appropriate activation/widget keys; default traversal budget is 40 key actions per target.
-4. Compare observable state outcomes, not just screenshots or the agent's declaration of success. Anchor scrolling records before/after coordinates, the intended destination ID, its visibility and text. A scroll outcome passes only when keyboard/narrow operation reaches that same visible destination with matching content. Reset matching requires the same URL, heading, widget/dialog states and target tag/name/role/href/controls/tab index; unrelated clocks or rotating hero text do not invalidate that source. Non-scroll outcome uncertainty remains review.
-5. Repeat a suspected failure from a reset state. Confirm only when DOM/event/state evidence supports the missing keyboard operation and recognized alternative paths have been considered. Public-site uncertainty remains `review`.
+## Supporting accessibility probes
 
-Repeated focus is not automatically a trap. A dialog may intentionally contain focus. Positive `tabindex` or a non-native element is not by itself proof that the selected task is impossible.
+Reuse the existing pinned axe mapping and selected-control keyboard checks where applicable to the journey. Record actual pointer outcomes, reset source state, keys/focus, and equivalent keyboard outcomes. A keyboard discrepancy needs independent evidence; exhausted search alone is review. Do not require the whole legacy suite as a release gate for every new run.
 
-Focus indicators, suspected traps, heading quality, visible form-instruction quality, alt-text meaning, complex contrast backgrounds, and ambiguous clipping are review/advisory observations in v1. They cannot change numerical scores through AI judgment.
+Keep existing 320 CSS-pixel reflow evidence scoped to frozen content/control samples. Responsive replacements and two-dimensional content exceptions need explicit handling; overflow alone is not a confirmed failure. Dedicated 200% text resizing of audited websites remains deferred.
 
-## Forms and reflow boundaries
-
-Assess validation applicability using visible, enabled, editable fields in the selected state; hidden, read-only, disabled and button-only controls alone justify N/A, with the field inventory retained. A dialog opened later is a separate selected state. Active form testing requires a server-configured authorized origin and fixture/test recipe, including expected client-side behavior. A URL entered by a visitor does not grant that authorization. Public sites get static checks; applicable F02/F03 remain `not_tested` when active behavior is unknown. Verified absence of relevant form controls or verified inapplicability of a validation check may justify N/A. Absence of currently displayed errors and lack of authorization do not.
-
-Use controlled invalid input that does not create real submissions. Inspect label/name, invalid state, error text, and recognized error relationships. Do not require one particular ARIA technique when another valid relationship exists.
-
-Freeze up to 60 desktop text/control targets and relocate those same targets at narrow width rather than independently selecting the first 60 again. Accept a responsive content replacement only when its tag and normalized text match uniquely; preserve missing/hidden/changed-target reasons in observations and report wording. This is a bounded content sample, not full DOM equivalence. For reflow, combine narrow screenshots, scroll geometry, hit testing, control operation, and relevant layout metadata. Tables/maps and other justified two-dimensional content require exception handling. A blank screenshot, hidden responsive control, overflow measurement, or AI classification alone cannot confirm a reflow failure. A successful geometric probe alone cannot establish that all content is preserved; narrow the assertion or use `review`.
+Public forms receive static, non-submitting checks. Existing server-authorized, client-only fixture recipes can test validation; visiting a public URL never grants this authorization. No error currently being visible is not proof that validation works. Supplemental assertions retain their own coverage but have no extra weight in the four-category health formula.
 
 ## Evidence contract
 
-Every result records check/version, checkpoint, status, sample boundaries, reason, method/version, viewport, timestamp, and evidence IDs. A finding also contains target identity, expected/observed behavior, affected instances, WCAG reference, and reproduction steps.
+Every result records source, method/version, actual URL, timestamp, viewport/device strategy, state/target identity where applicable, expected/observed outcome, verdict/availability, limitations, and evidence IDs. Recommendations also record AI model/prompt version and evidence links. Add WCAG references only where relevant to the accessibility assertion.
 
-Keep deterministic verification separate from estimated impact. AI probabilities are estimates, not measured auditor accuracy or human agreement. Confirmation requires assertion evidence or explicitly recorded human verification.
+Keep raw source artifacts and actual before/after screenshots, proposed versus executed actions, actor/phase labels, and reproduction steps. Audited text/HTML is untrusted and escaped. Store frames privately. Do not invent screenshots for Lighthouse or represent Twinly frames as Google's browser session.
 
-## References
+## Official references
 
+- [PageSpeed Insights API parameters and response](https://developers.google.com/speed/docs/insights/v5/reference/pagespeedapi/runpagespeed) and [lab versus field data](https://developers.google.com/speed/docs/insights/v5/about).
+- [Gemma 4 on the Gemini API](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api) and [Gemma image understanding](https://ai.google.dev/gemma/docs/capabilities/vision/image). Gemma output is requested as JSON and validated by the application; Gemini native structured-output support is not assumed for Gemma.
 - [WCAG 2.2](https://www.w3.org/TR/WCAG22/) and [Playwright accessibility testing](https://playwright.dev/docs/accessibility-testing).
-- [Keyboard](https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html), [labels and instructions](https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html), and [error identification](https://www.w3.org/WAI/WCAG22/Understanding/error-identification.html).
-- [Text contrast](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html), [reflow and exceptions](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html), and [distinct text-resizing requirement](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html).

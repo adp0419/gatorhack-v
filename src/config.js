@@ -3,6 +3,11 @@ export const VERSIONS = Object.freeze({
   scoring: "equal-categories-v1",
   prompt: "explore-v2",
 });
+export const WEBSITE_VERSIONS = Object.freeze({
+  schema: "website-evaluation-v2",
+  scoring: "website-health-v2",
+  prompt: "website-review-v3",
+});
 export const VIEWPORTS = Object.freeze({
   desktop: { width: 1280, height: 800 },
   narrow: { width: 320, height: 800 },
@@ -35,4 +40,7 @@ export const config = {
   ).replace(/\/$/, ""),
   twinlyKey: process.env.TWINLY_KEY,
   openaiKey: process.env.OPENAI_API_KEY,
+  pagespeedKey: process.env.PAGESPEED_API_KEY,
+  geminiKey: process.env.GEMINI_API_KEY,
+  geminiModel: process.env.GEMINI_MODEL || "gemma-4-26b-a4b-it",
 };
