@@ -50,13 +50,15 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 await page.goto(`${base}/`);
 await page.keyboard.press('Tab');
 const skip = await page.evaluate(() => document.activeElement.textContent.trim());
-await page.keyboard.press('Tab');
-await page.keyboard.press('Tab');
-const field = await page.evaluate(() => document.activeElement.id);
+let field = '';
+for (let i = 0; i < 10 && field !== 'url'; i += 1) {
+  await page.keyboard.press('Tab');
+  field = await page.evaluate(() => document.activeElement.id);
+}
 await page.keyboard.press('Enter');
 await page.waitForTimeout(200);
 const afterSubmit = await page.evaluate(() => ({ focus: document.activeElement.id, error: document.getElementById('url-error').textContent }));
-console.log(`\n# keyboard\n  first Tab: "${skip}"; third Tab focus: #${field}; empty submit -> focus #${afterSubmit.focus}, error "${afterSubmit.error}"`);
+console.log(`\n# keyboard\n  first Tab: "${skip}"; Tab reaches: #${field}; empty submit -> focus #${afterSubmit.focus}, error "${afterSubmit.error}"`);
 
 await page.goto(`${base}/run?id=${runId}`, { waitUntil: 'networkidle' });
 const link = page.locator('.findings a').first();

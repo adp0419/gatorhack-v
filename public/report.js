@@ -115,11 +115,41 @@ function summary(report, run) {
     el('li', {}, `Evidence review (OpenAI Decisions): ${triageText(report.triage)}`),
   );
   section.append(el('h3', {}, 'How this audit ran'), providers);
+  if (report.mode === 'authorized') section.append(demoSwitch());
   section.append(el('div', { class: 'actions' },
     el('button', { type: 'button', onclick: (e) => startRetest(e.currentTarget, report) }, 'Retest after a fix'),
     el('a', { class: 'button secondary', href: `/api/audits/${encodeURIComponent(report.runId)}`, download: `accessbench-${report.runId}.json` }, 'Download JSON report'),
   ), el('p', { class: 'field-error', id: 'retest-error', hidden: true }));
   return section;
+}
+
+// For the local demo site: choose which version it serves before a retest.
+function demoSwitch() {
+  const status = el('p', { class: 'small', role: 'status' });
+  const radio = (value, text) =>
+    el('label', { class: 'choice' },
+      el('input', { type: 'radio', name: 'demo-variant', value, onchange: () => setDemoVariant(value, status) }),
+      text);
+  const fieldset = el('fieldset', {},
+    el('legend', {}, 'Demo site version for the next retest'),
+    radio('broken', 'Broken website'),
+    radio('fixed', 'Fixed website (simulates the developer’s fix)'),
+  );
+  fetch('/api/demo').then((r) => r.json()).then(({ variant }) => {
+    const input = fieldset.querySelector(`input[value="${variant}"]`);
+    if (input) input.checked = true;
+  }).catch(() => {});
+  return el('div', { class: 'actions' }, el('div', {}, fieldset, status));
+}
+
+async function setDemoVariant(variant, status) {
+  try {
+    const res = await fetch('/api/demo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ variant }) });
+    if (!res.ok) throw new Error();
+    status.textContent = `The demo site now serves the ${variant} version. Press “Retest after a fix” to check it.`;
+  } catch {
+    status.textContent = 'The demo site version could not be changed.';
+  }
 }
 
 function triageText(t) {

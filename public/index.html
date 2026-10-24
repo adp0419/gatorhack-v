@@ -15,8 +15,25 @@
   <h1>Audit a website's accessibility</h1>
   <p>AccessBench opens the site in a real browser, lets Twinly explore it like a visitor, and runs bounded checks in five categories: keyboard operation, forms, text contrast, structure and semantics, and zoom and reflow.</p>
 
+  <section class="panel" aria-labelledby="demo-heading">
+    <h2 id="demo-heading">Try the demo site</h2>
+    <p>“Gator Bikes” is a small test site that runs alongside AccessBench. The broken version has one seeded problem in each category; the fixed version corrects them at the same address.</p>
+    <form id="demo-form">
+      <fieldset>
+        <legend>Version to audit</legend>
+        <label class="choice"><input type="radio" name="variant" value="broken" checked> Broken website</label>
+        <label class="choice"><input type="radio" name="variant" value="fixed"> Fixed website</label>
+      </fieldset>
+      <p id="demo-error" class="field-error" hidden></p>
+      <div class="actions">
+        <button type="submit" id="demo-button">Audit the demo site</button>
+        <a id="demo-link" class="button secondary" href="http://localhost:4100/" target="_blank" rel="noreferrer">View the demo site (opens in a new tab)</a>
+      </div>
+    </form>
+  </section>
+
   <section class="panel" aria-labelledby="start-heading">
-    <h2 id="start-heading">Start an audit</h2>
+    <h2 id="start-heading">Audit any public website</h2>
     <form id="start-form" novalidate>
       <label for="url">Website address</label>
       <input id="url" name="url" type="url" inputmode="url" autocomplete="url" required aria-describedby="url-hint url-error" placeholder="https://example.com">

@@ -12,18 +12,18 @@ Requires Node.js 22+.
 npm install
 npx playwright install chromium
 cp .env.example .env        # then fill in TWINLY_KEY and OPENAI_API_KEY
-npm test                    # unit tests
-npm run fixtures            # controlled demo site at http://localhost:4100 (separate terminal)
-npm start                   # AccessBench at http://localhost:3000
+npm run dev                 # AccessBench at http://localhost:3000 + demo site at http://localhost:4100
 ```
 
-Open http://localhost:3000, enter `http://localhost:4100/` (or any public site), and start an audit.
+Open http://localhost:3000. Under **Try the demo site**, choose **Broken website** or **Fixed website** and press **Audit the demo site**, or enter any public website address.
 
 ### Demo: broken → fixed → retest
 
-1. `npm run fixture:broken`, then audit `http://localhost:4100/`. The pointer-only "Contact" navigation is reported as a confirmed keyboard blocker.
-2. `npm run fixture:fixed` (the "developer fix"; AccessBench does not edit code).
-3. Press **Retest after a fix** on the report. The retest reuses the same plan; matching findings show as **Resolved**.
+1. Audit the demo site with **Broken website** selected. The pointer-only "Contact" navigation is reported as a confirmed keyboard blocker.
+2. On the report, set **Demo site version** to **Fixed website** (this stands in for the developer's fix; AccessBench does not edit code).
+3. Press **Retest after a fix**. The retest reuses the same plan; matching findings show as **Resolved**.
+
+`npm start` runs AccessBench alone; `npm run fixtures` runs the demo site alone; `npm run fixture:broken|fixed` switches versions from the terminal.
 
 ### Other scripts
 

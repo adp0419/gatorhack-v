@@ -2,8 +2,22 @@ import express from 'express';
 import { validateTarget, TargetError } from '../runner/url-guard.js';
 import { startAudit, cancelAudit, activeRunId } from '../runner/run-audit.js';
 import { runExists, getRun, readEvents, subscribe, framePath, readArtifact, listRuns } from '../store/run-store.js';
+import { getVariant, setVariant, VARIANTS } from '../../fixtures/variant.js';
 
 export const apiRouter = express.Router();
+
+// Local demo control: which version of the controlled fixture site is served.
+const DEMO_URL = `http://localhost:${process.env.FIXTURE_PORT || 4100}/`;
+
+apiRouter.get('/demo', (req, res) => {
+  res.json({ url: DEMO_URL, variant: getVariant() });
+});
+
+apiRouter.post('/demo', (req, res) => {
+  const { variant } = req.body || {};
+  if (!VARIANTS.includes(variant)) return res.status(400).json({ error: 'Choose broken or fixed.' });
+  res.json({ url: DEMO_URL, variant: setVariant(variant) });
+});
 
 function loadRun(req, res) {
   const { id } = req.params;

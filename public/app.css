@@ -47,6 +47,10 @@ p { margin: 0 0 var(--space-3); }
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: var(--space-4); margin-bottom: var(--space-4); }
 
 label { display: block; font-weight: 600; margin-bottom: var(--space-1); }
+fieldset { border: 1px solid var(--border); border-radius: 4px; padding: var(--space-2) var(--space-4) var(--space-3); margin: 0; }
+legend { font-weight: 600; padding: 0 var(--space-1); }
+label.choice { font-weight: 400; display: flex; gap: var(--space-2); align-items: center; padding: var(--space-1) 0; }
+label.choice input { width: 1.125rem; height: 1.125rem; margin: 0; }
 input[type="url"] { font: inherit; width: 100%; max-width: 560px; padding: var(--space-2) var(--space-3); border: 1px solid var(--muted); border-radius: 4px; }
 .hint { color: var(--muted); font-size: 0.875rem; margin-top: var(--space-1); }
 .field-error { color: var(--fail); font-weight: 600; margin-top: var(--space-1); }

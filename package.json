@@ -8,6 +8,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "dev": "node --env-file-if-exists=.env scripts/dev.js",
     "start": "node --env-file-if-exists=.env src/server/index.js",
     "fixtures": "node fixtures/server.js",
     "fixture:broken": "node fixtures/set-variant.js broken",

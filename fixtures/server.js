@@ -8,21 +8,9 @@
 //   semantics  - icon-only search button has no name; hero image has no alt
 //   reflow     - promo banner has a fixed 900px width
 import express from 'express';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { getVariant as variant } from './variant.js';
 
-const dir = path.dirname(fileURLToPath(import.meta.url));
-const variantFile = path.join(dir, '.variant');
 const port = Number(process.env.FIXTURE_PORT || 4100);
-
-function variant() {
-  try {
-    return fs.readFileSync(variantFile, 'utf8').trim() === 'fixed' ? 'fixed' : 'broken';
-  } catch {
-    return 'broken';
-  }
-}
 
 const styles = (fixed) => `
   * { box-sizing: border-box; }
