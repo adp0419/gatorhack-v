@@ -29,12 +29,16 @@
         <form id="start-form" class="launch-form">
           <label for="target-url">Website URL</label>
           <div class="input-row">
+            <span class="url-prefix" aria-hidden="true">https://www.</span>
             <input
               id="target-url"
               name="url"
-              type="url"
+              type="text"
               required
-              placeholder="https://your-website.com"
+              inputmode="url"
+              autocomplete="url"
+              placeholder="your-website.com"
+              aria-label="Website domain and path"
               aria-describedby="target-help form-error"
             /><button type="submit" id="start-button">
               Explore my website
@@ -120,17 +124,22 @@
       <section id="run-view" hidden aria-labelledby="run-title">
         <div class="run-heading">
           <div>
-            <p class="eyebrow">Evaluation workspace</p>
+            <p id="workspace-label" class="subtle">Evaluation workspace</p>
             <h1 id="run-title">Website evaluation</h1>
             <p id="run-target" class="wrap"></p>
             <p id="report-version" class="subtle"></p>
+          </div>
+          <div id="report-actions" class="button-row">
+            <a href="#">Recent reports</a>
           </div>
           <button id="cancel-button" class="secondary" type="button">
             Cancel evaluation
           </button>
         </div>
         <div class="run-meta">
-          <span id="lifecycle" class="badge">Queued</span
+          <time id="report-date" hidden></time
+          ><span id="report-status" class="badge" hidden></span
+          ><span id="lifecycle" class="badge">Queued</span
           ><span id="elapsed"></span
           ><span id="connection" class="subtle">Connecting…</span>
         </div>
@@ -139,45 +148,52 @@
           class="source-progress"
           aria-label="Evaluation sources"
         ></div>
-        <div class="workspace">
-          <section class="panel viewer" aria-labelledby="viewer-title">
-            <div class="section-heading">
-              <h2 id="viewer-title">Browser evidence</h2>
-              <span id="phase" class="subtle"></span>
-            </div>
-            <p id="frame-status" class="subtle">
-              Waiting for the first captured frame.
-            </p>
-            <a
-              id="frame-link"
-              target="_blank"
-              rel="noopener"
-              hidden
-              aria-label="Open full captured browser screenshot"
-              ><img
-                id="browser-frame"
-                alt="Captured audited page; measurements and actions are described in the adjacent action trail."
-                width="1280"
-                height="800"
-            /></a>
-            <p id="current-action">
-              The runner will capture each executed action.
-            </p>
-          </section>
-          <aside class="panel activity" aria-labelledby="trail-title">
-            <h2 id="trail-title">Action trail</h2>
-            <p class="subtle">
-              Twinly proposals, Playwright execution, and independent checks are
-              labeled separately. Lighthouse runs in a separate Google session.
-            </p>
-            <ol
-              id="action-trail"
-              tabindex="0"
-              aria-label="Scrollable action trail"
-            ></ol>
-            <h3>Selected states</h3>
-            <ol id="checkpoints"></ol>
-          </aside>
+        <div id="workspace" class="workspace">
+          <details id="evidence-disclosure" open>
+            <summary>Evidence · actual browser captures</summary>
+            <section class="panel viewer" aria-labelledby="viewer-title">
+              <div class="section-heading">
+                <h2 id="viewer-title">Browser evidence</h2>
+                <span id="phase" class="subtle"></span>
+              </div>
+              <p id="frame-status" class="subtle">
+                Waiting for the first captured frame.
+              </p>
+              <a
+                id="frame-link"
+                target="_blank"
+                rel="noopener"
+                hidden
+                aria-label="Open full captured browser screenshot"
+                ><img
+                  id="browser-frame"
+                  alt="Captured audited page; measurements and actions are described in the adjacent action trail."
+                  width="1280"
+                  height="800"
+              /></a>
+              <p id="current-action">
+                The runner will capture each executed action.
+              </p>
+            </section>
+          </details>
+          <details id="activity-disclosure" open>
+            <summary>Activity · actions and selected states</summary>
+            <aside class="panel activity" aria-labelledby="trail-title">
+              <h2 id="trail-title">Action trail</h2>
+              <p class="subtle">
+                Twinly proposals, Playwright execution, and independent checks
+                are labeled separately. Lighthouse runs in a separate Google
+                session.
+              </p>
+              <ol
+                id="action-trail"
+                tabindex="0"
+                aria-label="Scrollable action trail"
+              ></ol>
+              <h3>Selected states</h3>
+              <ol id="checkpoints"></ol>
+            </aside>
+          </details>
         </div>
         <section id="report" aria-labelledby="results-title" class="report">
           <div class="section-heading">
@@ -191,17 +207,30 @@
           <div class="metrics">
             <div class="panel">
               <p id="score-label">Website health score — tested scope</p>
-              <strong id="overall-score">No score yet</strong>
+              <div class="overall-score-display">
+                <div id="overall-ring" hidden></div>
+                <strong id="overall-score">No score yet</strong>
+              </div>
             </div>
             <div class="panel">
               <p id="coverage-label">Numeric categories scored</p>
               <strong id="overall-coverage">Pending</strong>
               <p id="conclusive" class="subtle"></p>
+              <ul
+                id="score-legend"
+                class="score-legend"
+                aria-label="Overall score segments, clockwise from the top"
+                hidden
+              ></ul>
+              <p id="ring-explanation" class="subtle" hidden>
+                Each scored category has an equal segment, filled to its score.
+                Unscored categories are excluded.
+              </p>
             </div>
           </div>
-          <p id="scope-description" class="subtle wrap"></p>
-          <details>
+          <details id="score-method">
             <summary>What does this score mean?</summary>
+            <p id="scope-description" class="subtle wrap"></p>
             <p id="score-explanation">
               Each check is counted once per selected state. Category scores
               summarize conclusive passes and failures; the overall score
@@ -212,21 +241,33 @@
             </p>
           </details>
           <div id="categories" class="category-grid"></div>
+          <p id="qualitative-note" class="subtle" hidden>
+            Design &amp; UX is qualitative; it does not contribute to the health
+            score.
+          </p>
+          <p id="journey-summary" class="subtle" hidden></p>
+          <section
+            id="priority-feedback"
+            aria-labelledby="priority-title"
+            hidden
+          ></section>
+
+          <section
+            id="recommendations"
+            aria-labelledby="recommendations-title"
+            hidden
+          ></section>
+          <div id="design-review" hidden></div>
+          <p id="blockers" class="callout"></p>
+          <h3 id="findings-title">Findings</h3>
+          <p id="triage-status" class="subtle"></p>
+          <div id="findings"></div>
           <section
             id="journey-result"
             class="panel"
             aria-labelledby="journey-title"
             hidden
           ></section>
-          <section
-            id="recommendations"
-            aria-labelledby="recommendations-title"
-            hidden
-          ></section>
-          <p id="blockers" class="callout"></p>
-          <h3>Findings</h3>
-          <p id="triage-status" class="subtle"></p>
-          <div id="findings"></div>
           <details id="source-diagnostics" hidden>
             <summary>Source diagnostics and Best Practices</summary>
             <div id="source-diagnostic-details"></div>

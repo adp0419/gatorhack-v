@@ -50,6 +50,20 @@ test("start screen reopens authenticated screenshot reports, handles missing evi
       sessionStorage.setItem("accessbench-token", "browser-test-only-token"),
     );
     await page.goto(app.origin);
+    assert.equal(
+      await page.locator(".url-prefix").textContent(),
+      "https://www.",
+    );
+    assert.equal(await page.locator("#target-url").inputValue(), "");
+    await page.locator("#target-url").fill("example.com/path");
+    assert.equal(
+      await page.locator("#start-form").evaluate((form) => {
+        const value = form.querySelector("#target-url").value.trim();
+        return `https://www.${value}`;
+      }),
+      "https://www.example.com/path",
+    );
+    await page.locator("#target-url").fill("");
     await page.waitForSelector(".capture-ready img");
     assert.equal(await page.locator(".report-preview").count(), 3);
     assert.equal(

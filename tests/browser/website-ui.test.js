@@ -20,7 +20,20 @@ test("website dashboard keeps qualitative review, numeric availability, evidence
       gemini: "available",
     },
     results: [],
-    findings: [],
+    findings: [
+      {
+        key: "navigation-label",
+        category: "accessibility",
+        checkId: "link-name",
+        title: "Give the link a clear name",
+        source: "Lighthouse",
+        verification: "automated",
+        observed: "A navigation link has no accessible name.",
+        recommendation:
+          "Add a descriptive link label so its destination is clear.",
+        evidenceIds: ["lighthouse-report"],
+      },
+    ],
     errors: [],
     manifest: {
       versions: { schema: "website-evaluation-v2" },
@@ -127,11 +140,73 @@ test("website dashboard keeps qualitative review, numeric availability, evidence
     await page.waitForSelector('[data-category="design"]');
     assert.deepEqual(await page.locator("#categories h3").allTextContents(), [
       "Accessibility",
-      "Design & UX",
       "SEO",
       "Performance",
       "Functionality",
     ]);
+    assert.equal(
+      await page.locator("#overall-ring [data-score-segment]").count(),
+      3,
+    );
+    assert.equal(await page.locator("#score-legend li").count(), 3);
+    assert.equal(
+      await page.locator("#categories .score-ring-graphic").count(),
+      4,
+    );
+    assert.equal(await page.locator('[data-category="design"] svg').count(), 0);
+    assert.equal(
+      await page
+        .locator('#overall-ring [data-score-segment="functionality"]')
+        .count(),
+      0,
+    );
+    assert.equal(await page.locator("#report-status").textContent(), "Partial");
+    assert.equal(
+      await page.locator("#evidence-disclosure").getAttribute("open"),
+      null,
+    );
+    assert.equal(
+      await page.locator("#activity-disclosure").getAttribute("open"),
+      null,
+    );
+    assert.equal(
+      await page.evaluate(
+        () =>
+          document
+            .getElementById("report")
+            .compareDocumentPosition(document.getElementById("workspace")) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ),
+      4,
+    );
+    assert.match(
+      await page.locator("#priority-feedback").textContent(),
+      /Add a descriptive link label/,
+    );
+    await page.locator('[data-category-link="details-accessibility"]').focus();
+    await page.waitForTimeout(1700);
+    assert.equal(
+      await page.locator(":focus").getAttribute("data-category-link"),
+      "details-accessibility",
+    );
+    await page
+      .locator('[data-category-link="details-accessibility"]')
+      .press("Enter");
+    assert.equal(
+      await page.locator("#details-accessibility").getAttribute("open"),
+      "",
+    );
+    await page.locator("#priority-feedback [data-finding]").press("Enter");
+    await page.waitForSelector("#finding-dialog[open]");
+    assert.match(
+      await page.locator("#finding-detail").textContent(),
+      /navigation link/,
+    );
+    await page.keyboard.press("Escape");
+    assert.equal(
+      await page.locator(":focus").getAttribute("data-finding"),
+      "navigation-label",
+    );
     assert.equal(
       await page.locator("#overall-coverage").textContent(),
       "3 of 4",
@@ -154,7 +229,7 @@ test("website dashboard keeps qualitative review, numeric availability, evidence
     );
     assert.equal(await page.locator("#retest-form").isVisible(), false);
     assert.match(
-      await page.locator("#conclusive").textContent(),
+      await page.locator("#journey-summary").textContent(),
       /1 of 2 planned journey outcomes verified/,
     );
     assert.match(
@@ -180,6 +255,17 @@ test("website dashboard keeps qualitative review, numeric availability, evidence
       await page.locator(":focus").getAttribute("data-evidence"),
       "lighthouse-report",
     );
+    await page.evaluate(() => scrollTo(0, 0));
+    await mkdir(".impeccable/review", { recursive: true });
+    await page.screenshot({
+      path: ".impeccable/review/report-desktop.png",
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.screenshot({
+      path: ".impeccable/review/report-mobile.png",
+      fullPage: true,
+    });
     await mkdir("test-results", { recursive: true });
     await page.screenshot({
       path: "test-results/website-dashboard.png",
@@ -211,6 +297,10 @@ test("website dashboard keeps qualitative review, numeric availability, evidence
       true,
       "200% text at 320px",
     );
+    await page.screenshot({
+      path: ".impeccable/review/report-text-200.png",
+      fullPage: true,
+    });
     await page.evaluate(
       () => (document.documentElement.style.fontSize = "100%"),
     );
@@ -236,7 +326,16 @@ test("website dashboard keeps qualitative review, numeric availability, evidence
       await page.locator('[data-category="design"]').textContent(),
       /Design review unavailable/,
     );
-    assert.equal(await page.locator("#categories .category").count(), 5);
+    assert.equal(await page.locator("#categories .category").count(), 4);
+    assert.equal(
+      await page.locator("#overall-ring [data-score-segment]").count(),
+      0,
+    );
+    assert.equal(
+      await page.locator("#overall-ring .score-ring-empty").count(),
+      1,
+    );
+    assert.equal(await page.locator("#score-legend li").count(), 0);
     assert.match(
       await page.locator('[data-category="design"]').textContent(),
       /Gemma4/,
@@ -262,6 +361,76 @@ test("website dashboard keeps qualitative review, numeric availability, evidence
     assert.doesNotMatch(
       await page.locator('[data-category="design"]').textContent(),
       /Gemma4/,
+    );
+    run.status = "completed";
+    run.summary = {
+      ...run.summary,
+      provisional: false,
+      reportPartial: false,
+      journeyCoverage: 100,
+      numericAvailable: 4,
+    };
+    run.summary.categories = run.summary.categories.map((c) => ({
+      ...c,
+      score: 100,
+    }));
+    await app.store.save(run);
+    await page.reload();
+    await page.waitForFunction(
+      () => document.getElementById("report-status").textContent === "Complete",
+    );
+    assert.match(
+      await page.locator("#provisional").textContent(),
+      /Tested scope complete/,
+    );
+    assert.equal(await page.locator("#phase").isVisible(), false);
+    assert.equal(
+      await page.locator("#overall-ring [data-score-segment]").count(),
+      4,
+    );
+    assert.equal(await page.locator("#score-legend li").count(), 4);
+    run.status = "running";
+    await app.store.save(run);
+    await page.reload();
+    await page.waitForFunction(
+      () =>
+        !document
+          .getElementById("run-view")
+          .classList.contains("finished-report"),
+    );
+    assert.equal(await page.locator("#cancel-button").isVisible(), true);
+    assert.equal(
+      await page.locator("#evidence-disclosure").getAttribute("open"),
+      "",
+    );
+    assert.equal(
+      await page.evaluate(
+        () =>
+          document
+            .getElementById("workspace")
+            .compareDocumentPosition(document.getElementById("report")) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ),
+      4,
+    );
+    run.status = "partial";
+    await app.store.save(run);
+    await page.waitForFunction(() =>
+      document.getElementById("run-view").classList.contains("finished-report"),
+    );
+    assert.equal(
+      await page.locator("#evidence-disclosure").getAttribute("open"),
+      null,
+    );
+    await page.locator("#evidence-disclosure > summary").press("Enter");
+    await page.waitForTimeout(1700);
+    assert.equal(
+      await page.locator("#evidence-disclosure").getAttribute("open"),
+      "",
+    );
+    assert.equal(
+      await page.locator(":focus").textContent(),
+      "Evidence · actual browser captures",
     );
     assert.deepEqual(errors, []);
   } finally {

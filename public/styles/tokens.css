@@ -17,6 +17,11 @@
   --color-border: #b4b8a8;
   --color-error: #991b1b;
   --color-focus: #35491d;
+  --score-accessibility: #5c7828;
+  --score-seo: #3477a3;
+  --score-performance: #a86a24;
+  --score-functionality: #935b83;
+  --score-track: #d9ddcf;
   --font-body:
     system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, monospace;

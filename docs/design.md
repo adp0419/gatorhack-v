@@ -12,6 +12,11 @@ colors:
   border: "#b4b8a8"
   error: "#991b1b"
   focus: "#35491d"
+  score-accessibility: "#5c7828"
+  score-seo: "#3477a3"
+  score-performance: "#a86a24"
+  score-functionality: "#935b83"
+  score-track: "#d9ddcf"
 typography:
   display:
     fontFamily: '"Gelasio", Georgia, "Times New Roman", serif'
@@ -99,7 +104,7 @@ components:
 
 AccessBench is an AI experience lab for a website. Warm paper and dark ink give actual browser evidence room to speak; a sharp lime action invites exploration. Editorial serif headings pair with precise sans-serif controls and plain-language explanations.
 
-The implemented start screen is a launch surface and visual archive of saved reports. The same shared palette reaches the existing dashboard, while its browser-centered structural redesign remains planned. Actual captures and readable uncertainty keep the experience grounded in bounded observation.
+The implemented start screen is a launch surface and visual archive of saved reports. Finished website evaluation v2 reports extend the same system with a compact, score- and feedback-led reading order. Actual captures and readable uncertainty keep the experience grounded in bounded observation. The browser-centered structural overhaul remains deferred for live evaluations; legacy accessibility reports retain their original scope and presentation.
 
 **Key Characteristics:**
 
@@ -136,7 +141,7 @@ Error red (`error`) carries error text alongside an explicit message; status nev
 
 **Body Font:** the platform system sans-serif stack. **Label/Mono Font:** system sans-serif for labels and system monospace for code evidence.
 
-The serif gives the opening promise and archive heading an editorial voice; interface copy remains direct and legible. The frontmatter captures the implemented roles. Display serves the start headline, headline serves the archive title, title serves report captions, label serves launcher labels, and mono serves preformatted evidence. Body defaults to a comfortable 16 px with 1.5 line height; supporting metadata is smaller. Existing dashboard headings remain sans-serif.
+The serif gives the opening promise and archive heading an editorial voice; interface copy remains direct and legible. The frontmatter captures the implemented roles. Display serves the start headline, headline serves the archive title, title serves report captions, label serves launcher labels, and mono serves preformatted evidence. Body defaults to a comfortable 16 px with 1.5 line height; supporting metadata is smaller. Finished v2 site headings use the display family at 2rem, reducing to 1.65rem below 36rem; report section headings and controls remain sans-serif. Scores use tabular numerals.
 
 **The Evidence First Rule.** Use expressive display type to frame the investigation, and readable interface type to explain its observations.
 
@@ -146,11 +151,11 @@ The shared content container is at most 80rem, with centered margins and the exi
 
 The implemented start screen puts the URL launcher across the available width. Recent reports use two equal columns with 2.5rem row and 2rem column gaps; at 45rem and below the gallery and launcher stack. A fixed 16:10 preview region reserves image space, with top-aligned cover cropping and an attached caption. Long URLs wrap. The demo follows recent reports and the quieter scope summary.
 
-The existing dashboard retains its two-to-one viewer/trail grid, collapsing at 60rem, and its existing report structure. Category cards move from five columns to two at 60rem and one at 36rem. These are current behavior, not completion of the planned browser-centered workspace overhaul. Preserve usable layouts at 320 CSS pixels and 200% text enlargement.
+Live evaluations retain the two-to-one viewer/trail grid, collapsing at 60rem; their browser-centered workspace overhaul remains deferred. Finished v2 reports put the compact identity header and overall score/availability summary before four numeric category cards. The numeric row uses four equal columns, two at 60rem and below, and one at 36rem and below. The overall summary also stacks at 36rem. Journey summary, measured feedback, AI suggestions, qualitative review, and expandable detail follow; browser evidence and activity sit after the report. Legacy reports retain their original structure. Preserve usable layouts at 320 CSS pixels and 200% text enlargement.
 
 ## Elevation & Depth
 
-The system uses flat paper surfaces, restrained borders, and strong section rules rather than shadows. The archive begins with a two-pixel ink rule. Actual website captures supply visual detail; they do not receive decorative elevation. The existing issue dialog uses a translucent backdrop to separate it from the page.
+The system uses flat paper surfaces, restrained borders, and strong section rules rather than shadows. The archive and finished report begin with two-pixel ink rules. Finished numeric cards and qualitative review use transparent surfaces and thin dividers, with no nested panel chrome. Actual website captures supply visual detail; they do not receive decorative elevation. The existing issue dialog uses a translucent backdrop to separate it from the page.
 
 **The Flat Paper Rule.** Convey grouping with space, surface tone, and rules; keep resting surfaces free of decorative shadows.
 
@@ -180,6 +185,16 @@ Status badges use soft olive, ink text, a thin border, and modest rounded corner
 
 The compact AccessBench masthead is a text link in ink, paired with the product descriptor. Standard links are deep olive and underlined. Each report preview is a single link with a visible open-report cue; hover thickens that cue's underline. The shared focus outline applies to links and controls.
 
+### Finished v2 reports
+
+A compact site heading, wrapping URL, version/scope, date, and explicit status identify the saved report; **Recent reports** and **Download JSON report** are header actions. Hide saved phase, elapsed-time, connection, and source-progress chrome. Terminal status remains honest: **Complete**, **Partial**, **Provisional**, **Failed · partial evidence**, or **Canceled · partial evidence** as supported by the run and its summary.
+
+The overall score and numeric availability lead into exactly four numeric cards: Accessibility, SEO, Performance, Functionality. Keep source, missing-value reason, and partial journey coverage visible. Each **View findings** button opens its category disclosure, focuses its summary, and scrolls it into view. Design & UX remains a separate qualitative section with model details, observations, evidence links, and explicit unavailable state.
+
+**What to improve first** shows at most three measured findings, ordered by confirmed blocker then recorded impact; retain verification labels and practical next steps. All findings remain in expandable category details. **AI suggestions** follow in high/medium/low priority order and carry explicit AI labels. Neither suggested priority nor qualitative prose changes measured scores or journey outcomes.
+
+Native **Evidence** and **Activity** disclosures follow the finished report and start closed when entering that surface. They retain actual captures, selected states, and the textual action trail. Opening evidence must remain keyboard accessible; preserve user disclosure choices during subsequent updates. Live workspace disclosures remain open with their summary controls hidden.
+
 ### Evidence arrival
 
 A genuinely loaded archive image reveals through a short clipping animation (420ms, `cubic-bezier(0.16, 1, 0.3, 1)`). Its caption and reserved area stay in place. Reduced motion disables the animation and gives the same static result. No generated raster assets are shipped by this redesign; run evidence remains private.
@@ -190,7 +205,7 @@ A genuinely loaded archive image reveals through a short clipping animation (420
 
 - Do use actual saved captures with their scope, version, and status attached.
 - Do keep body text readable, controls labeled, focus visible, and evidence understandable in text.
-- Do distinguish the implemented start screen from the planned browser-centered workspace.
+- Do distinguish the implemented start screen and finished v2 report from the deferred live workspace overhaul.
 
 ### Don't:
 
@@ -202,9 +217,9 @@ Owner of interaction, visual defaults, and report wording. The local interface i
 
 ## Accepted creative direction
 
-Accepted on 2026-10-24: frame **AccessBench as an AI experience lab for a website**, using direct language about discovering friction and understanding the customer's next step. Keep the AccessBench name. Lead with curiosity, discovery, and evidence from the browser journey; categories explain the findings underneath that story.
+Accepted on 2026-10-24: frame **AccessBench as an AI experience lab for a website**, using direct language about discovering friction and understanding the customer's next step. Keep the AccessBench name. Use curiosity, discovery, and actual journey evidence to explain the investigation. Finished reports lead with scores and practical feedback; live runs retain the accepted browser-centered direction.
 
-**The website under test is the visual centerpiece of AccessBench.** Actual browser captures, evidence annotations, and selectable observed states give each report its character. The experience should feel like an investigation the user can follow, with observed problems paired with practical next steps.
+**The website under test gives AccessBench its visual character.** Actual browser captures lead start-screen archive previews and remain the intended centerpiece of live evaluations; finished reports make scores and useful feedback easiest to scan, with the captured evidence available below. The experience should feel like an investigation the user can follow, with observed problems paired with practical next steps.
 
 Implemented start-screen copy:
 
@@ -216,12 +231,12 @@ Implemented start-screen copy:
 >
 > **Explore my website →**
 
-The start screen now implements this direction, with the opening headline, labeled URL launcher, and screenshot-led recent reports. Shared palette tokens apply globally; the dashboard structure is unchanged. The browser-centered workspace overhaul remains planned. This direction does not expand the tested scope or imply human user research, conversion measurement, comprehensive crawling, or guaranteed outcomes.
+The start screen implements the opening headline, labeled URL launcher, and screenshot-led recent reports. Finished v2 reports now implement a score- and feedback-led extension of the same paper/ink/olive system. Shared palette tokens apply globally; the browser-centered live workspace overhaul remains deferred. This direction does not expand the tested scope or imply human user research, conversion measurement, comprehensive crawling, or guaranteed outcomes.
 
 ## Three views
 
 1. **Start (implemented):** expressive headline, full-width labeled website URL launcher and **Explore my website** button, followed by screenshot-led recent reports. Summarize the entry-page scan plus one automatically selected, non-submitting customer journey near the input. Present the five categories as a quieter supporting line rather than five equal hero boxes. No goal-entry field. Actual saved screenshots lead the two-column gallery, with one column at narrow widths; no-capture and unavailable-image placeholders remain explicit. At most ten reports retain site, date, scope/version, and status; v1 reports retain accessibility labels. Previews use authenticated API fetches and local blob URLs. Demo access is secondary. Empty history uses a clearly labeled textual example, never a fake browser capture.
-2. **Live evaluation / dashboard (browser-centered overhaul planned):** one view evolves from source progress into results. Make the captured browser the main stage, with the selected goal, actual actions, and verified outcomes alongside it. Retain provider provenance and source availability as supporting information.
+2. **Evaluation / report:** live evaluations retain the existing browser/trail workspace, with a browser-centered overhaul deferred. Keep the selected goal, actual actions, verified outcomes, provider provenance, and source availability understandable. When a v2 run finishes, the view becomes the compact report described below; evidence and activity move after its results in closed native disclosures. This finished-report hierarchy does not change legacy reports or the live workspace scope.
 3. **Issue details:** addressable panel with observation, source, evidence, affected journey/state, suggested improvement, and reproduction steps. Restore focus when it closes.
 
 Keep existing saved-run links, the bounded recent-run list, demo selector, and JSON report download. Legacy saved accessibility reports must open with original labels/version context, not website-health branding that implies new measurements. The existing v1 retest flow can remain on v1 reports; new v2 comparison controls are deferred until supported.
@@ -234,19 +249,29 @@ Display the latest Twinly/Playwright screenshot with capture time and actual act
 
 Keep a readable textual trail with selected states and observed outcomes. Screenshots update after actual actions/probes; continuous video, remote control, and browser takeover are deferred. Announce disconnection/stale captures, preserve partial results after cancellation, and never present saved frames as live activity.
 
-## Dashboard hierarchy
+## Finished report hierarchy
 
-- Concise evidence-derived takeaway and the most useful next steps, with confirmed customer blockers prominent. Keep AI suggestions visibly distinct from verified observations; preserve a deterministic summary when Gemma is unavailable.
-- Prominent website health score with **tested scope**, numeric availability, and provisional status attached to the score.
-- Scope summary: entry page and device strategy; one journey; states actually visited; source warnings.
-- Five category sections in order: Accessibility, Design & UX, SEO, Performance, Functionality.
-- Journey result: selected goal, safe endpoint, completed/blocked/partial/unavailable status, and passed/failed/unverified outcomes.
-- Prioritized issues and suggested improvements, with confirmed customer blockers prominent.
-- Expandable source diagnostics, including Lighthouse Best Practices, and the retained evidence trail.
+This hierarchy applies to terminal website evaluation v2 runs, including failed and canceled runs with retained evidence. It extends the incumbent interface without changing score logic, providers, or legacy report scope.
+
+1. Compact site identity: site, URL, scope/version, date, honest status, JSON export, and recent-report navigation. Hide saved-run phase and live progress chrome.
+2. Overall website health score with tested scope, numeric availability, and explicit partial/provisional limitations, followed by four numeric cards in order: Accessibility, SEO, Performance, Functionality. Missing data says **Not scored** or **No score available**, with the reason; unresolved journey coverage stays visible even when Functionality is 100.
+3. Separate concise journey summary: selected goal, actual status, and verified/planned outcome coverage. Keep journey coverage distinct from numeric category availability.
+4. **What to improve first:** first three measured findings, confirmed blockers first, then recorded impact where available. Show verification state, customer-facing context, practical next step, and access to the finding/evidence.
+5. **AI suggestions:** separate qualitative recommendations sorted high, medium, low; suggested priority never changes measurements or confirms an outcome.
+6. **Design & UX:** separate qualitative review, model details, observation disclosures, and evidence links; explicit unavailable review when needed.
+7. Score explanation, limitations, all measured findings in expandable category details, the full customer journey/assertion result, and source diagnostics. Best Practices remains supporting diagnostics only. Category card buttons open and focus the matching disclosure.
+8. **Evidence** and **Activity** after the report, closed by default on entry. Preserve actual screenshots, textual trail, selected states, source distinctions, and keyboard access.
+
+The four numeric cards are not the five product categories: Design & UX remains qualitative and has its own section. Keep the browser-centered direction for live evaluation and screenshot-led archive previews; do not turn the finished report back into a browser-first workspace.
 
 The audience is business owners and small teams. Lead issue wording with the observed problem and practical remedy; put audit IDs and implementation detail in expandable evidence.
 
 ## Scores and qualitative results
+
+Numeric v2 scores use category-colored outline rings: Accessibility olive (`#5c7828`), SEO blue (`#3477a3`), Performance amber (`#a86a24`), and Functionality plum (`#935b83`). Colors encode category identity, never pass/fail bands. Each category ring fills clockwise from the top to the measured score, with its numeric value centered inside. Unavailable categories use a neutral dashed outline and **Not scored**, distinct from a measured zero's empty continuous track. Design & UX has no ring.
+
+The overall ring has one equal segment per available numeric category, in the same clockwise category order as the cards. Each segment uses its category color and fills proportionally to that category's unrounded score; the center keeps the authoritative overall summary value. Small gaps separate segments. A measured zero retains its segment and denominator place; an unavailable category contributes no segment. With no scores, show a neutral dashed outline and **No score available**. A named, numeric legend maps the segments without relying on color, and the explanation makes equal weighting and excluded categories explicit. Rings are decorative SVG geometry hidden from assistive technology; adjacent labels, values, availability and journey coverage retain the meaning. They introduce no animation or scoring changes. Colored strokes meet at least 3:1 against both paper and the unfilled track; text stays ink. Forced-colors mode uses system stroke colors.
+
 
 Design & UX shows **Qualitative review**, a short Gemma 4 summary, and evidence-linked findings. Do not show a numeric score, empty score ring, N/A score, or a manufactured pass. If Gemma 4 fails, show **Design review unavailable** with the reason and preserve other results.
 
@@ -262,7 +287,7 @@ Each issue includes concise title, category, source, verification state, actual 
 
 Use **Observed by automated checks**, **Verified journey outcome**, **Needs review**, and **AI suggestion** where appropriate. Gemma 4's suggested impact/priority is distinct from a confirmed defect. Do not promise ranking gains, conversion increases, compliance, or complete website correctness. One issue can link several source records without duplicate deductions.
 
-Recommendation lists group practical next steps by urgency and category. Preserve a deterministic evidence-derived summary if Gemma 4 recommendations are unavailable; do not imply AI review succeeded. Blocked resources and source/URL differences have visible sanitized explanations.
+AI recommendation lists order practical next steps by suggested high, medium, and low priority and retain their category labels. Measured feedback uses confirmed blockers and recorded impact, with all measured findings available in category disclosures. Preserve a deterministic evidence-derived summary if Gemma 4 recommendations are unavailable; do not imply AI review succeeded. Blocked resources and source/URL differences have visible sanitized explanations.
 
 ## Frontend boundaries
 
@@ -273,7 +298,7 @@ Use motion to mark real evidence arriving: a captured frame, an executed action,
 ## Interface acceptance
 
 - Semantic landmarks, headings, skip link, labeled inputs, descriptive controls, and keyboard-accessible issue details.
-- Complete start, inspect, cancel, saved-report, and existing retest flows by keyboard; preserve focus during updates and on closing a dialog.
+- Complete start, inspect, cancel, saved-report, and existing retest flows by keyboard; preserve focus during updates and on closing a dialog. Numeric category buttons must open and focus the matching details summary; native evidence/activity disclosures must work by keyboard.
 - Polite announcements for phase/completion changes, without reading every screenshot or log line aloud.
 - Equivalent textual evidence, associated form errors, reduced-motion support, and no color-only meaning.
 - Stack cards/viewer/trail at narrow widths; fit screenshots without losing access to their full content. Test the app at 320 CSS pixels and 200% text enlargement.

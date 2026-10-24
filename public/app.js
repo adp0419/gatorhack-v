@@ -7,11 +7,15 @@ import {
   actionLine,
   findingDetail,
   healthCategoryCard,
+  scoreRing,
+  scoreLegend,
   designCard,
   journeyPanel,
   recommendationList,
   sourceDiagnostics,
   recentReport,
+  priorityFeedback,
+  categoryDetails,
 } from "./components.js";
 const $ = (id) => document.getElementById(id);
 let token = sessionStorage.getItem("accessbench-token") || "",
@@ -231,9 +235,14 @@ $("target-url").oninput = () => {
   $("target-url").removeAttribute("aria-invalid");
   $("form-error").textContent = "";
 };
+function startUrl() {
+  const value = $("target-url").value.trim();
+  if (/^https?:\/\//i.test(value)) return value;
+  return `https://www.${value.replace(/^www\./i, "")}`;
+}
 $("start-form").onsubmit = (event) => {
   event.preventDefault();
-  void launch($("target-url").value, undefined, "form-error", "start-button");
+  void launch(startUrl(), undefined, "form-error", "start-button");
 };
 $("retest-form").onsubmit = (event) => {
   event.preventDefault();
@@ -332,8 +341,58 @@ function connect() {
 }
 function render() {
   const v2 = websiteRun(run);
+  const finished = v2 && done(run.status);
+  const surfaceKey = `${run.id}:${finished}`;
+  const changedSurface = $("run-view").dataset.surface !== surfaceKey;
+  $("run-view").dataset.surface = surfaceKey;
+  $("run-view").classList.toggle("finished-report", finished);
+  if (changedSurface) {
+    if (finished) {
+      $("run-view").append($("workspace"));
+      $("report").insertBefore($("score-method"), $("findings-title"));
+      $("report-actions").append($("download-report"));
+    } else {
+      $("run-view").insertBefore($("workspace"), $("report"));
+      $("report").insertBefore($("score-method"), $("categories"));
+      $("report")
+        .querySelector(".section-heading")
+        .append($("download-report"));
+    }
+    $("evidence-disclosure").open = !finished;
+    $("activity-disclosure").open = !finished;
+  }
+  $("report-actions").hidden = !finished;
+  $("report-date").hidden = !finished;
+  $("report-date").dateTime = run.createdAt;
+  $("report-date").textContent = new Date(run.createdAt).toLocaleString(
+    undefined,
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    },
+  );
+  $("report-status").hidden = !finished;
+  $("workspace-label").hidden = finished;
+  $("phase").hidden = finished;
+  $("lifecycle").hidden = finished;
+  $("elapsed").hidden = finished;
+  $("connection").hidden = finished;
+  $("priority-feedback").hidden = !finished;
+  $("design-review").hidden = !v2;
+  $("run-view").classList.toggle("has-score-rings", v2);
+  $("overall-ring").hidden = !v2;
+  $("score-legend").hidden = !v2;
+  $("ring-explanation").hidden = !v2;
+  $("qualitative-note").hidden = !v2;
+  $("journey-summary").hidden = !finished;
+  $("findings-title").textContent = finished ? "Category details" : "Findings";
   $("run-title").textContent = v2
-    ? "Website evaluation"
+    ? finished
+      ? new URL(run.url).host
+      : "Website evaluation"
     : "Accessibility benchmark";
   $("report-version").textContent = v2
     ? "Website evaluation v2 · one page and one journey"
@@ -347,7 +406,7 @@ function render() {
   $("score-explanation").textContent = v2
     ? "The health score averages available Accessibility, SEO, Performance, and Functionality scores equally. Lighthouse measures one entry-page load; Functionality uses conclusive outcomes from one journey. Design & UX is qualitative and does not change scores. Missing categories or unresolved journey outcomes make the score provisional. This is tested scope, not a percentage of your website checked."
     : "Each check is counted once per selected state. Category scores summarize conclusive passes and failures; the overall score averages scored categories equally. Coverage averages each applicable category’s conclusive checks divided by planned checks. Review and untested checks reduce coverage. Proven inapplicability is excluded. Missing evidence never becomes a pass.";
-  $("source-progress").hidden = !v2;
+  $("source-progress").hidden = !v2 || finished;
   if (v2)
     setHTML(
       "source-progress",
@@ -397,6 +456,8 @@ function render() {
       { id: "performance", name: "Performance", score: null },
       { id: "functionality", name: "Functionality", score: null },
     ];
+    setHTML("overall-ring", scoreRing(categories));
+    setHTML("score-legend", scoreLegend(categories));
     $("overall-score").textContent =
       summary?.score == null
         ? "No score available"
@@ -411,18 +472,59 @@ function render() {
         : summary.reportPartial
           ? "Partial report"
           : "Tested scope complete";
+    const journeyCoverageText = $("conclusive").textContent;
+    if (finished) {
+      const limitations = [];
+      if ((summary?.numericAvailable || 0) < 4)
+        limitations.push(
+          `${4 - (summary?.numericAvailable || 0)} numeric category(s) unavailable`,
+        );
+      if (summary?.journeyCoverage !== 100)
+        limitations.push("journey outcomes unresolved");
+      if (run.sources?.design?.status !== "available")
+        limitations.push("qualitative review unavailable");
+      if (run.status === "failed" || run.status === "canceled")
+        limitations.push(`evaluation ${run.status}`);
+      $("conclusive").textContent = limitations.length
+        ? `${limitations.join("; ")}. See category details and limitations below.`
+        : summary?.reportPartial || summary?.provisional
+          ? "Some evidence is incomplete. See category details and limitations below."
+          : "Complete within the tested scope.";
+    }
     const card = (id) =>
       healthCategoryCard(
-        categories.find((c) => c.id === id) || { id, score: null },
+        {
+          ...(categories.find((c) => c.id === id) || { id, score: null }),
+          partial: id === "functionality" && summary?.journeyCoverage !== 100,
+        },
+        finished,
       );
     setHTML(
       "categories",
       card("accessibility") +
-        designCard(run.sources?.design) +
         card("seo") +
         card("performance") +
         card("functionality"),
     );
+    setHTML("design-review", designCard(run.sources?.design));
+    if (finished) {
+      const status =
+        run.status === "completed"
+          ? !summary || summary.reportPartial
+            ? "Partial"
+            : summary?.provisional
+              ? "Provisional"
+              : "Complete"
+          : run.status === "partial"
+            ? "Partial"
+            : run.status === "canceled"
+              ? "Canceled · partial evidence"
+              : "Failed · partial evidence";
+      $("report-status").textContent = status;
+      $("journey-summary").textContent =
+        `Journey: ${run.journey?.goal || "No journey selected"} · ${run.journey?.status || "unavailable"}. ${journeyCoverageText}.`;
+      setHTML("priority-feedback", priorityFeedback(run.findings));
+    }
     $("scope-description").textContent =
       `Entry page: ${run.landedUrl || run.url}. Lighthouse: ${run.sources?.lighthouse?.strategy || "mobile"} page load in Google’s session. Journey: desktop 1280 × 800 CSS px, ${(run.manifest?.checkpoints || []).length} selected state(s), one non-submitting journey. Sources can observe different page states.`;
     $("journey-result").hidden = false;
@@ -480,9 +582,11 @@ function render() {
     : `Twinly: ${run.providers.twinly}. Decisions triage: ${run.providers.decisions}. Estimated impact never changes scores.`;
   setHTML(
     "findings",
-    run.findings.length
-      ? run.findings.map(findingRow).join("")
-      : '<p class="subtle">No findings available yet. Untested checks are not passes.</p>',
+    finished
+      ? categoryDetails(run)
+      : run.findings.length
+        ? run.findings.map(findingRow).join("")
+        : '<p class="subtle">No findings available yet. Untested checks are not passes.</p>',
   );
   document.querySelectorAll("[data-finding]").forEach(
     (button) =>
@@ -501,6 +605,14 @@ function render() {
       .join(""),
   );
   $("check-results-details").hidden = v2 && !run.results?.length;
+  document.querySelectorAll("[data-category-link]").forEach((link) => {
+    link.onclick = () => {
+      const details = $(link.dataset.categoryLink);
+      details.open = true;
+      details.querySelector("summary").focus();
+      details.scrollIntoView({ block: "start" });
+    };
+  });
   wireEvidenceButtons();
   const networkDetails = run.networkLimitations?.length
     ? `<h3>Blocked resources and affected scope</h3><ul>${run.networkLimitations.map((item) => `<li><strong>${escape(item.resourceType || item.kind)}</strong> · ${escape(item.destination)}<p>${escape(item.reason || item.kind)}. ${escape(item.affectedChecks || "Checks cover loaded content only.")}</p></li>`).join("")}</ul>`
@@ -570,6 +682,7 @@ async function showFinding() {
   $("finding-title").textContent = finding.title;
   $("finding-dialog").dataset.key = finding.key;
   $("finding-detail").innerHTML = findingDetail(finding);
+  wireEvidenceButtons();
   if (!$("finding-dialog").open) $("finding-dialog").showModal();
   $("close-finding").focus();
   for (const id of (finding.evidenceIds || [])
@@ -624,7 +737,8 @@ function closeFinding() {
   if ($("finding-dialog").open) $("finding-dialog").close();
   history.replaceState(null, "", `#run/${runId}`);
   const key = opener?.dataset.finding;
-  if (key)
+  if (opener?.isConnected) opener.focus();
+  else if (key)
     [...document.querySelectorAll("[data-finding]")]
       .find((e) => e.dataset.finding === key)
       ?.focus();
@@ -680,6 +794,8 @@ function route() {
     ])
       $(id).replaceChildren();
     $("overall-score").textContent = "No score yet";
+    $("overall-ring").replaceChildren();
+    $("score-legend").replaceChildren();
     $("overall-coverage").textContent = "Pending";
     $("conclusive").textContent = "";
     $("provisional").textContent = "Coverage pending";
