@@ -46,6 +46,7 @@ The exact check registry, budgets, data structures, storage choice, and visual s
 ## Must ship
 
 - A working local end-to-end audit and public Vercel + Sandbox deployment after feasibility verification. A local-only fallback leaves the public deployment requirement incomplete.
+- Current execution order (user, 2026-10-23): run the local Node MVP first; deployment is deferred until the local MVP is ready. The public hosting target remains a follow-up requirement.
 - A real Twinly-driven exploration, visible while it runs; three-state maximum, not a requirement to fabricate three states.
 - Every category represented by the bounded registry, with honest result states.
 - At least one real Decisions request whose answer affects triage or ordering in the report.
@@ -59,7 +60,7 @@ The exact check registry, budgets, data structures, storage choice, and visual s
 
 Do not build user accounts, billing, a whole-domain crawler, authenticated audits, CAPTCHA handling, automated production submissions, automatic code edits, scheduled monitoring, or comprehensive assistive-technology simulation.
 
-Dedicated 200% text resizing, exhaustive keyboard traversal, video/VNC streaming, manual browser takeover, goal-entry UI, cross-browser testing, full history management, exports, and a vanilla-versus-React benchmark are deferred. The MVP still retains the evidence required to reopen a run and compare one retest.
+Dedicated 200% text resizing, exhaustive keyboard traversal, video/VNC streaming, manual browser takeover, goal-entry UI, cross-browser testing, full history management, and a vanilla-versus-React benchmark are deferred. The MVP retains the evidence required to reopen a run and compare one retest. A bounded recent-run list and local JSON report download were added with the demo workflow improvements; broader history and export formats remain deferred.
 
 ## Product success
 

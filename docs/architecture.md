@@ -48,7 +48,11 @@ Convert coordinates using the actual screenshot dimensions and its scale relativ
 
 Automatic objective: inspect the current site for high-value accessibility interactions, prioritizing main navigation, then a relevant dialog or form, while respecting the state/action budgets. Twinly chooses the actions; use novelty and DOM metadata to select distinct audited checkpoints. Do not pre-script the demo route.
 
-Default engineering budgets: 12 Twinly calls, 180 seconds for exploration, 30 seconds per provider request within the remaining budget, and a 300-second total runner deadline. These are limits, not promised latency. Record and version them; calibrate after the first real runs. Stop on budget, cancellation, `done`, `fail`, or blocked action. Never invent additional states to reach three.
+Default engineering budgets: 12 Twinly calls, 180 seconds for exploration, 30 seconds per provider request within the remaining budget, and a 300-second total runner deadline. These are limits, not promised latency. Record and version them; calibrate after the first real runs. Bound each checkpoint’s checks to 90 seconds and its keyboard probe to 45 seconds; close affected pages on timeout, retain completed measurements, and mark remaining checks not tested. New probe pages inherit 5-second operation and 15-second navigation timeouts. Stop on budget, cancellation, `done`, `fail`, or blocked action. Never invent additional states to reach three.
+
+For a retest, also stop successfully as soon as all baseline checkpoints and their required pointer interactions have been reconstructed. Record this as a system policy event, not a Twinly `done` response. Ignore extra targets outside the frozen sample when selecting keyboard/reflow probes.
+
+If Twinly stops before reconstruction is complete, try the baseline's recorded setup actions, followed by its same-origin URL without credentials or query parameters. For a checkpoint reached after navigation, also try its observed URL with only trailing page-local actions to reopen menus or dialogs. These are labeled system fallbacks, never Twinly exploration. Verify the stored URL/widget signature, relocate each frozen pointer target, execute it through the existing action guard, and verify the observed outcome before including it in the sample. Persist the recovered setup URL/actions for independent probes. Failed state reconstruction and missing sampled interactions remain unresolved and suppress a comparable delta. Cancellation and the total runner deadline also stop fallbacks.
 
 ## OpenAI Decisions
 
@@ -86,14 +90,18 @@ Vercel request handlers must not own a long-lived browser or rely on process mem
 
 Suggested routes: `POST /api/audits`, `GET /api/audits/:id`, `GET /api/audits/:id/events`, `GET /api/audits/:id/evidence/:evidenceId`, and `POST /api/audits/:id/cancel`. These are application contracts, not existing endpoints.
 
+The local implementation also provides `GET /api/audits` (ten recent summaries) and `GET /api/audits/:id/report.json` (finished-run attachment). Both use the same API authentication boundary as status/evidence; they do not expose provider configuration or keys.
+
 ## Concrete browsing restrictions
 
 - Audit only public HTTP(S) targets. Reject credentials in URLs, unsupported ports/protocols, loopback/private/link-local/metadata destinations, and redirected or resolved equivalents. Cover IPv4/IPv6, subresource requests, popups, redirects, and DNS rebinding; URL string validation alone is insufficient. Enforce at the network layer where possible.
-- Restrict agent top-level navigation to the validated starting origin. Permit required public CDN/assets under the same private-network restrictions. Reject browser downloads and escape from the audit context.
+- Resolve the initial HTTP redirect chain through the IP-pinned proxy, validating each destination before following it. Record the requested URL and landing URL; restrict subsequent agent top-level navigation to the validated landing origin. Authorized local fixtures cannot redirect to another origin. Navigation requests use Playwright `route.fetch({ maxRedirects: 0 })` and validate redirect destinations before fulfilling responses; `route.continue()` alone does not intercept every redirect. Permit required public CDN/assets under the same private-network restrictions. Reject browser downloads and escape from the audit context.
 - Treat `commits: true` as a stop signal on public sites, and independently inspect actions; a false model flag is not authorization. Deny submissions including implicit Enter, destructive operations, account actions, and side-effectful navigation. Abort mutating requests in public mode and label any resulting limitations.
 - Cross-site login, passwords, sensitive values, CAPTCHAs, purchases, and production submissions remain outside scope. Isolate contexts; never reuse the developer's browser profile/cookies.
 - Keep provider/storage secrets outside audited page content and the frontend. Escape page-derived output. Do not publish screenshots by default.
 - Use a deployment demo token/capability and a bounded launch/concurrency policy before enabling a public paid runner; no user-account feature is needed. Permit only one concurrent audit initially. If safe arbitrary-URL browsing cannot be completed, publish a clearly labeled allowlisted demo, retaining the selected real public site.
+
+The local runner accepts public targets by default, behind the IP-pinned proxy and existing action/request restrictions. `AUDIT_PUBLIC_TARGETS=false` restores launch allowlisting via `AUDIT_ALLOWED_ORIGINS`. Binding beyond loopback still requires the demo token. This local capability does not verify hosted deployment feasibility.
 
 ## Official references
 
@@ -103,3 +111,5 @@ Verified by reading during planning on 2026-10-23; real integration remains unte
 - [OpenAI Decisions guide](https://developers.openai.com/api/docs/guides/decisions).
 - [Vercel Sandbox](https://vercel.com/docs/sandbox), [Functions limits](https://vercel.com/docs/functions/limitations), and [streaming](https://vercel.com/docs/functions/streaming-functions).
 - [Vercel Blob SDK](https://vercel.com/docs/vercel-blob/using-blob-sdk).
+
+Navigation redirect handling follows the [Playwright routing contract](https://playwright.dev/docs/api/class-route#route-fetch), with automatic redirect following disabled during inspection.
