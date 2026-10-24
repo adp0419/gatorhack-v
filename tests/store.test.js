@@ -54,3 +54,45 @@ test("recent runs are bounded and ordered, ignoring incomplete or corrupt direct
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("recent preview references prefer initial evidence, retain legacy captures and reject unsafe IDs", async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "accessbench-previews-"));
+  try {
+    const store = new FileStore(dir);
+    const base = {
+      url: "https://example.com",
+      status: "partial",
+      createdAt: new Date().toISOString(),
+    };
+    await store.save({
+      ...base,
+      id: "initial",
+      evidence: [{ id: "frame-abc" }],
+      latestFrame: { id: "frame-def" },
+    });
+    await store.save({
+      ...base,
+      id: "legacy",
+      manifest: { checkpoints: [{ evidenceId: "frame-cab" }] },
+    });
+    await store.save({
+      ...base,
+      id: "unsafe",
+      evidence: [{ id: "../../secret" }],
+      latestFrame: { id: 'frame-abc" onerror="alert(1)' },
+    });
+    const recent = await store.recent();
+    assert.equal(
+      recent.find((r) => r.id === "initial").previewEvidenceId,
+      "frame-abc",
+    );
+    assert.equal(
+      recent.find((r) => r.id === "legacy").previewEvidenceId,
+      "frame-cab",
+    );
+    assert.equal(recent.find((r) => r.id === "unsafe").previewEvidenceId, null);
+    assert.equal("evidence" in recent[0], false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

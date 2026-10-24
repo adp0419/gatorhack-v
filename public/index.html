@@ -13,21 +13,20 @@
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
       <a class="brand" href="#">AccessBench</a
-      ><span class="subtle">Website evaluation, with evidence</span>
+      ><span class="subtle">An AI experience lab for your website</span>
     </header>
     <main id="main">
       <section id="start-view" aria-labelledby="start-title">
         <div class="intro">
-          <p class="eyebrow">Measure. Observe. Improve.</p>
           <h1 id="start-title">
-            Understand your website. Know what to improve.
+            Your website makes a promise.<br />See how it holds up.
           </h1>
           <p>
-            Page measurements, one observed customer journey, and practical
-            recommendations in one clear report.
+            Explore one customer journey, measure the entry page, and turn the
+            evidence into practical improvements.
           </p>
         </div>
-        <form id="start-form" class="panel">
+        <form id="start-form" class="launch-form">
           <label for="target-url">Website URL</label>
           <div class="input-row">
             <input
@@ -35,16 +34,17 @@
               name="url"
               type="url"
               required
-              placeholder="https://example.com"
+              placeholder="https://your-website.com"
               aria-describedby="target-help form-error"
-            /><button type="submit" id="start-button">Evaluate website</button>
+            /><button type="submit" id="start-button">
+              Explore my website
+            </button>
           </div>
           <p id="target-help" class="subtle">
-            One entry page and one automatically selected journey, with up to
-            three observed states. Public evaluations stop before submissions or
-            purchases. URLs and captured evidence are shared with Google
-            PageSpeed Insights, Twinly, and Gemma through Google’s Gemini API as
-            needed. Runs locally in an isolated browser.
+            Entry-page measurements and one automatically selected journey, up
+            to three states. Stops before submissions or purchases. URLs and
+            captured evidence are shared as needed with Google PageSpeed
+            Insights, Twinly, and Gemma via Google’s Gemini API.
           </p>
           <p id="form-error" class="error" role="alert"></p>
           <div id="token-row" hidden>
@@ -55,27 +55,46 @@
               autocomplete="off"
             /><button id="unlock" type="button">Connect</button>
           </div>
-          <div id="demo-targets" class="button-row"></div>
-          <p id="configuration" class="subtle"></p>
+          <details class="launch-details">
+            <summary>Local runner and supported URLs</summary>
+            <p id="configuration" class="subtle"></p>
+          </details>
         </form>
-        <div class="scope-grid" aria-label="Five categories">
-          <p>Accessibility</p>
-          <p>Design &amp; UX</p>
-          <p>SEO</p>
-          <p>Performance</p>
-          <p>Functionality</p>
-        </div>
-        <p class="subtle">
-          Results describe the tested scope. Design &amp; UX is qualitative. An
-          evaluation does not establish whole-site correctness or WCAG
-          conformance.
-        </p>
+        <section class="recent-audits" aria-labelledby="recent-title">
+          <div class="archive-heading">
+            <h2 id="recent-title">Recent reports</h2>
+            <span class="subtle">Saved on this local runner</span>
+          </div>
+          <div class="archive-intro">
+            <p>Pick up where the evidence left off.</p>
+            <a href="#demo-title">Try the demo site</a>
+          </div>
+          <div id="recent-audits" aria-busy="true">
+            <p class="archive-message">Loading saved reports…</p>
+          </div>
+        </section>
+        <section class="scope-summary" aria-label="Report scope">
+          <p>One website. Five perspectives.</p>
+          <ul class="scope-grid" aria-label="Five categories">
+            <li>Accessibility</li>
+            <li>Design &amp; UX</li>
+            <li>SEO</li>
+            <li>Performance</li>
+            <li>Functionality</li>
+          </ul>
+          <p class="subtle">
+            Results describe the tested scope. Design &amp; UX is qualitative.
+            An evaluation does not establish whole-site correctness or WCAG
+            conformance.
+          </p>
+        </section>
         <section class="panel demo-panel" aria-labelledby="demo-title">
-          <h2 id="demo-title">Try the demo site</h2>
+          <h2 id="demo-title" tabindex="-1">Try the demo site</h2>
           <p>
             Explore the local broken and fixed fixtures. Google cannot measure
             local pages, so their Lighthouse scores remain unavailable.
           </p>
+          <div id="demo-targets" class="button-row"></div>
           <form id="demo-form" aria-describedby="demo-error">
             <fieldset class="demo-choices">
               <legend>Version to audit</legend>
@@ -96,15 +115,6 @@
             </div>
             <p id="demo-error" class="error" role="alert"></p>
           </form>
-        </section>
-        <section class="recent-audits" aria-labelledby="recent-title">
-          <h2 id="recent-title">Recent audits</h2>
-          <p class="subtle">
-            The ten most recent saved runs on this local runner.
-          </p>
-          <div id="recent-audits">
-            <p class="subtle">Loading saved runs…</p>
-          </div>
         </section>
       </section>
       <section id="run-view" hidden aria-labelledby="run-title">

@@ -88,6 +88,8 @@ Reuse monotonic event sequences and write-before-announce persistence. Existing 
 
 Keep local atomic storage in ignored `.accessbench/` directories. Existing APIs include start/list/status, events, evidence, cancellation, and finished JSON download under `/api/audits`. Reuse them with versioned payloads instead of requiring a route rename. Keep one interface-launched run at a time and preserve API token checks and bounded recent summaries.
 
+Recent summaries include a nullable `previewEvidenceId` for the screenshot-led start screen. Prefer the initial v2 evidence or first legacy checkpoint capture, falling back to the latest actual frame; accept only the existing `frame-[a-f0-9-]+` identifier shape. The listing stays bounded to ten records and does not expose full evidence content. The frontend fetches captures through the existing authenticated evidence route into temporary blob URLs, revoking them on navigation/refresh. No capture or a missing artifact yields an explicit text fallback, never a fabricated preview. Saved artifacts and report schemas are unchanged.
+
 ## Concrete browsing restrictions
 
 - Browser targets must be public HTTP(S) URLs on supported standard ports, without credentials. Reject loopback, private, link-local, metadata, and resolved/redirected equivalents across IPv4/IPv6. Validate DNS and pin upstream IPs through the existing public-network proxy; URL validation alone is insufficient.

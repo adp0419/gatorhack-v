@@ -1,0 +1,299 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-24T14:16:15.988103+00:00",
+  "title": "Design System: AccessBench",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Warm Paper",
+        "tonalRamp": [
+          "oklch(15% 0.0124 91.52)",
+          "oklch(26% 0.0124 91.52)",
+          "oklch(38% 0.0124 91.52)",
+          "oklch(49% 0.0124 91.52)",
+          "oklch(61% 0.0124 91.52)",
+          "oklch(72% 0.0124 91.52)",
+          "oklch(84% 0.0124 91.52)",
+          "oklch(95% 0.0124 91.52)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Light Paper",
+        "tonalRamp": [
+          "oklch(15% 0.0069 88.64)",
+          "oklch(26% 0.0069 88.64)",
+          "oklch(38% 0.0069 88.64)",
+          "oklch(49% 0.0069 88.64)",
+          "oklch(61% 0.0069 88.64)",
+          "oklch(72% 0.0069 88.64)",
+          "oklch(84% 0.0069 88.64)",
+          "oklch(95% 0.0069 88.64)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0163 133.73)",
+          "oklch(26% 0.0163 133.73)",
+          "oklch(38% 0.0163 133.73)",
+          "oklch(49% 0.0163 133.73)",
+          "oklch(61% 0.0163 133.73)",
+          "oklch(72% 0.0163 133.73)",
+          "oklch(84% 0.0163 133.73)",
+          "oklch(95% 0.0163 133.73)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Olive Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0318 128.24)",
+          "oklch(26% 0.0318 128.24)",
+          "oklch(38% 0.0318 128.24)",
+          "oklch(49% 0.0318 128.24)",
+          "oklch(61% 0.0318 128.24)",
+          "oklch(72% 0.0318 128.24)",
+          "oklch(84% 0.0318 128.24)",
+          "oklch(95% 0.0318 128.24)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Deep Olive",
+        "tonalRamp": [
+          "oklch(15% 0.0721 129.60)",
+          "oklch(26% 0.0721 129.60)",
+          "oklch(38% 0.0721 129.60)",
+          "oklch(49% 0.0721 129.60)",
+          "oklch(61% 0.0721 129.60)",
+          "oklch(72% 0.0721 129.60)",
+          "oklch(84% 0.0721 129.60)",
+          "oklch(95% 0.0721 129.60)"
+        ]
+      },
+      "accent-soft": {
+        "role": "primary",
+        "displayName": "Soft Olive",
+        "tonalRamp": [
+          "oklch(15% 0.0276 122.68)",
+          "oklch(26% 0.0276 122.68)",
+          "oklch(38% 0.0276 122.68)",
+          "oklch(49% 0.0276 122.68)",
+          "oklch(61% 0.0276 122.68)",
+          "oklch(72% 0.0276 122.68)",
+          "oklch(84% 0.0276 122.68)",
+          "oklch(95% 0.0276 122.68)"
+        ]
+      },
+      "lime": {
+        "role": "primary",
+        "displayName": "Sharp Lime",
+        "tonalRamp": [
+          "oklch(15% 0.1514 120.25)",
+          "oklch(26% 0.1514 120.25)",
+          "oklch(38% 0.1514 120.25)",
+          "oklch(49% 0.1514 120.25)",
+          "oklch(61% 0.1514 120.25)",
+          "oklch(72% 0.1514 120.25)",
+          "oklch(84% 0.1514 120.25)",
+          "oklch(95% 0.1514 120.25)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Paper Rule",
+        "tonalRamp": [
+          "oklch(15% 0.0227 118.34)",
+          "oklch(26% 0.0227 118.34)",
+          "oklch(38% 0.0227 118.34)",
+          "oklch(49% 0.0227 118.34)",
+          "oklch(61% 0.0227 118.34)",
+          "oklch(72% 0.0227 118.34)",
+          "oklch(84% 0.0227 118.34)",
+          "oklch(95% 0.0227 118.34)"
+        ]
+      },
+      "error": {
+        "role": "neutral",
+        "displayName": "Error Red",
+        "tonalRamp": [
+          "oklch(15% 0.1613 26.90)",
+          "oklch(26% 0.1613 26.90)",
+          "oklch(38% 0.1613 26.90)",
+          "oklch(49% 0.1613 26.90)",
+          "oklch(61% 0.1613 26.90)",
+          "oklch(72% 0.1613 26.90)",
+          "oklch(84% 0.1613 26.90)",
+          "oklch(95% 0.1613 26.90)"
+        ]
+      },
+      "focus": {
+        "role": "primary",
+        "displayName": "Focus Olive",
+        "tonalRamp": [
+          "oklch(15% 0.0721 129.60)",
+          "oklch(26% 0.0721 129.60)",
+          "oklch(38% 0.0721 129.60)",
+          "oklch(49% 0.0721 129.60)",
+          "oklch(61% 0.0721 129.60)",
+          "oklch(72% 0.0721 129.60)",
+          "oklch(84% 0.0721 129.60)",
+          "oklch(95% 0.0721 129.60)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Start-screen headline."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Archive section title."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Report preview captions."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Readable interface copy."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Launcher labels and supporting controls."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Preformatted evidence."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "capture-arrives",
+        "value": "420ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Clip reveal for an actual loaded capture; disabled with reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow-controls",
+        "value": "36rem"
+      },
+      {
+        "name": "start-stack",
+        "value": "45rem"
+      },
+      {
+        "name": "workspace-stack",
+        "value": "60rem"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "description": "Existing supporting action.",
+      "html": "<button class=\"ds-primary\">Open report</button>",
+      "css": ".ds-primary{border:1px solid var(--color-accent);border-radius:var(--radius);padding:.65rem 1rem;min-height:2.75rem;cursor:pointer;font:1rem/1.5 var(--font-body);background:var(--color-accent);color:white;border-color:var(--color-accent);}.ds-primary:hover:not(:disabled){filter:brightness(.94)}.ds-primary:focus-visible{outline:3px solid var(--color-focus);outline-offset:4px;}.ds-primary:disabled{opacity:.6;cursor:default}",
+      "refersTo": "button-primary"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "description": "Existing supporting action.",
+      "html": "<button class=\"ds-secondary\">Open report</button>",
+      "css": ".ds-secondary{border:1px solid var(--color-accent);border-radius:var(--radius);padding:.65rem 1rem;min-height:2.75rem;cursor:pointer;font:1rem/1.5 var(--font-body);background:var(--color-surface);color:var(--color-text);border-color:var(--color-border);}.ds-secondary:hover:not(:disabled){filter:brightness(.94)}.ds-secondary:focus-visible{outline:3px solid var(--color-focus);outline-offset:4px;}.ds-secondary:disabled{opacity:.6;cursor:default}",
+      "refersTo": "button-secondary"
+    },
+    {
+      "name": "URL Launcher",
+      "kind": "custom",
+      "description": "Full-width URL action with a joined lime button.",
+      "html": "<form class=\"ds-launch\"><label for=\"ds-url\">Website URL</label><div class=\"ds-launch-row\"><input id=\"ds-url\" type=\"url\" placeholder=\"https://your-website.com\"/><button type=\"button\">Explore my website</button></div></form>",
+      "css": ".ds-launch{font:1rem/1.5 var(--font-body);color:var(--color-text)}.ds-launch label{display:block;font-size:.875rem;font-weight:600;margin-bottom:.5rem}.ds-launch-row{display:flex;background:var(--color-surface);border:1px solid var(--color-text);border-radius:4px}.ds-launch input{min-width:0;width:100%;border:0;background:transparent;color:var(--color-text);font:1.125rem/1.5 var(--font-body);padding:1.1rem 1.25rem}.ds-launch input::placeholder{color:var(--color-muted)}.ds-launch button{font:650 1rem/1.5 var(--font-body);background:var(--color-lime);color:var(--color-text);border:0;border-left:1px solid var(--color-text);border-radius:0 3px 3px 0;padding:1rem 1.75rem;white-space:nowrap;cursor:pointer}.ds-launch button:hover{filter:brightness(.94)}.ds-launch :focus-visible{outline:3px solid var(--color-focus);outline-offset:4px;}.ds-launch-row:focus-within{outline:2px solid var(--color-focus);outline-offset:4px}@media(max-width:45rem){.ds-launch-row{flex-direction:column}.ds-launch button{border-left:0;border-top:1px solid var(--color-text);border-radius:0 0 3px 3px;white-space:normal}}",
+      "refersTo": "button-launch"
+    },
+    {
+      "name": "Text Button",
+      "kind": "button",
+      "description": "Underlined supporting action.",
+      "html": "<button class=\"ds-text\">Use the prepared fixed fixture</button>",
+      "css": ".ds-text{font:1rem/1.5 var(--font-body);background:transparent;border:0;color:var(--color-accent);padding:.4rem 0;min-height:2.75rem;cursor:pointer;text-align:left;text-decoration:underline;text-underline-offset:.2em}.ds-text:hover{filter:brightness(.94)}.ds-text:focus-visible{outline:3px solid var(--color-focus);outline-offset:4px;}",
+      "refersTo": "button-text"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "description": "Existing labeled light-paper field.",
+      "html": "<label class=\"ds-label\" for=\"ds-field\">Retest URL</label><input class=\"ds-field\" id=\"ds-field\" type=\"url\" placeholder=\"https://your-website.com\"/>",
+      "css": ".ds-label{display:block;font:1rem/1.5 var(--font-body);font-weight:600;margin-bottom:.5rem;color:var(--color-text)}.ds-field{font:1rem/1.5 var(--font-body);width:100%;min-width:0;border:1px solid #64748b;border-radius:var(--radius);padding:.65rem .75rem;background:var(--color-surface);color:var(--color-text);caret-color:var(--color-accent)}.ds-field::placeholder{color:var(--color-muted);opacity:1}.ds-field:focus-visible{outline:3px solid var(--color-focus);outline-offset:4px;}",
+      "refersTo": "input"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "description": "Text-labelled status without color-only meaning.",
+      "html": "<span class=\"ds-badge\">Needs review</span>",
+      "css": ".ds-badge{font:600 .8rem/1.5 var(--font-body);background:var(--color-accent-soft);color:var(--color-text);padding:.25rem .6rem;border:1px solid var(--color-border);border-radius:var(--radius)}",
+      "refersTo": "badge"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "description": "Existing flat report and demo container.",
+      "html": "<section class=\"ds-panel\"><h2>Browser evidence</h2><p>Waiting for the first captured frame.</p></section>",
+      "css": ".ds-panel{background:var(--color-surface);color:var(--color-text);border:1px solid var(--color-border);border-radius:var(--radius);padding:var(--space-6);font:1rem/1.5 var(--font-body)}.ds-panel h2{font-size:1.25rem;line-height:1.35;margin:0 0 1rem}.ds-panel p{margin:0;color:var(--color-muted)}@media(max-width:36rem){.ds-panel{padding:var(--space-4)}}",
+      "refersTo": "panel"
+    },
+    {
+      "name": "Masthead",
+      "kind": "nav",
+      "description": "Compact text brand and product descriptor.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Home\"><a href=\"#\">AccessBench</a><span>An AI experience lab for your website</span></nav>",
+      "css": ".ds-nav{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;padding:1.5rem;border-bottom:1px solid var(--color-border);background:var(--color-bg);font:1rem/1.5 var(--font-body);}.ds-nav a{font-size:1.4rem;font-weight:750;color:var(--color-text);text-decoration:none}.ds-nav span{font-size:.875rem;color:var(--color-muted)}.ds-nav a:focus-visible{outline:3px solid var(--color-focus);outline-offset:4px;}@media(max-width:36rem){.ds-nav{padding:1rem}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "AI experience lab",
+    "overview": "AccessBench is an AI experience lab for a website. Warm paper and dark ink give actual browser evidence room to speak; a sharp lime action invites exploration. Editorial serif headings pair with precise sans-serif controls and plain-language explanations.\n\nThe implemented start screen is a launch surface and visual archive of saved reports. The same shared palette reaches the existing dashboard, while its browser-centered structural redesign remains planned. Actual captures and readable uncertainty keep the experience grounded in bounded observation.",
+    "keyCharacteristics": [
+      "Warm paper, dark ink, and a sharp lime launch action.",
+      "Editorial display type with precise, readable interface text.",
+      "Actual browser evidence, restrained rules, and flat surfaces.",
+      "Visible scope, provenance, and uncertainty."
+    ],
+    "rules": [
+      {
+        "name": "The Ink on Lime Rule",
+        "body": "Use ink text on lime actions; use deep olive for readable links and focus indicators.",
+        "section": "colors"
+      },
+      {
+        "name": "The Evidence First Rule",
+        "body": "Use expressive display type to frame the investigation, and readable interface type to explain its observations.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Paper Rule",
+        "body": "Convey grouping with space, surface tone, and rules; keep resting surfaces free of decorative shadows.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use actual saved captures with their scope, version, and status attached.",
+      "Do keep body text readable, controls labeled, focus visible, and evidence understandable in text.",
+      "Do distinguish the implemented start screen from the planned browser-centered workspace."
+    ],
+    "donts": [
+      "Don't use lime for small text or as the sole focus indicator.",
+      "Don't manufacture screenshots, progress, passing outcomes, or evidence.",
+      "Don't turn a screenshot-led start-screen composition into a mandatory layout for every product surface."
+    ]
+  }
+}

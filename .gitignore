@@ -6,3 +6,5 @@ node_modules/
 .vercel/
 .DS_Store
 test-results/
+.impeccable/review/
+.impeccable/start-screen-brief.md

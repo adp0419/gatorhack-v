@@ -62,6 +62,13 @@ export class FileStore {
           baselineRunId: run.baselineRunId,
           summary: run.summary,
           versions: run.manifest?.versions,
+          previewEvidenceId:
+            [
+              run.evidence?.[0]?.id,
+              run.checkpoints?.[0]?.evidenceId,
+              run.manifest?.checkpoints?.[0]?.evidenceId,
+              run.latestFrame?.id,
+            ].find((id) => /^frame-[a-f0-9-]+$/.test(id || "")) || null,
         });
       } catch (error) {
         if (error.code !== "ENOENT" && !(error instanceof SyntaxError))

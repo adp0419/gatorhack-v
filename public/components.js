@@ -9,6 +9,32 @@ export const escape = (value) =>
   );
 export const round = (value) =>
   value === null || value === undefined ? null : Math.round(value);
+export function recentReport(item) {
+  const schema = item.versions?.schema;
+  const scope =
+    schema === "website-evaluation-v2"
+      ? "Website evaluation · one journey"
+      : schema === "accessbench-v1"
+        ? "Accessibility report · v1"
+        : "Saved report";
+  let site = item.url;
+  try {
+    site = new URL(item.url).host;
+  } catch {}
+  const lifecycle = String(item.status || "Unknown");
+  const status = `${lifecycle.charAt(0).toUpperCase()}${lifecycle.slice(1)}${item.summary?.provisional ? " · Provisional" : ""}`;
+  const hasPreview = /^frame-[a-f0-9-]+$/.test(item.previewEvidenceId || "");
+  return `<li><a class="report-preview" data-recent="${escape(item.id)}" href="#run/${escape(item.id)}">
+    <div class="report-capture" data-capture="${escape(item.id)}">
+      <span class="capture-placeholder">${hasPreview ? "Loading saved capture…" : "No screenshot captured"}</span>
+      <img alt="Saved browser capture of ${escape(site)}" width="1280" height="800" hidden />
+    </div>
+    <div class="preview-caption"><h3>${escape(site)}</h3><span class="preview-open">View report</span></div>
+    <p class="preview-status">${escape(status)} <span aria-hidden="true">·</span> <time datetime="${escape(item.createdAt)}">${escape(new Date(item.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }))}</time></p>
+    <p class="preview-scope">${escape(scope)}${item.baselineRunId ? " · Retest" : ""}</p>
+    <p class="preview-url">${escape(item.url)}</p>
+  </a></li>`;
+}
 export const verdict = (status) =>
   ({
     pass: "Passed",

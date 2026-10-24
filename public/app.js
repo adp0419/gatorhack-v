@@ -11,6 +11,7 @@ import {
   journeyPanel,
   recommendationList,
   sourceDiagnostics,
+  recentReport,
 } from "./components.js";
 const $ = (id) => document.getElementById(id);
 let token = sessionStorage.getItem("accessbench-token") || "",
@@ -101,7 +102,6 @@ async function configure() {
     );
     $("token-row").hidden = true;
     updateDemoLink();
-    await loadRecent();
   } catch (error) {
     $("form-error").textContent = error.message;
   }
@@ -128,17 +128,74 @@ $("demo-form").onsubmit = (event) => {
     "demo-button",
   );
 };
+let recentGeneration = 0;
+let recentController;
+const recentImageUrls = new Set();
+function clearRecentImages() {
+  recentGeneration++;
+  recentController?.abort();
+  for (const url of recentImageUrls) URL.revokeObjectURL(url);
+  recentImageUrls.clear();
+}
 async function loadRecent() {
+  clearRecentImages();
+  const generation = recentGeneration;
+  recentController = new AbortController();
+  const signal = recentController.signal;
+  $("recent-audits").setAttribute("aria-busy", "true");
   try {
-    const recent = await (await api("/api/audits")).json();
+    const recent = await (await api("/api/audits", { signal })).json();
+    if (generation !== recentGeneration) return;
+    const focused =
+      document.activeElement?.closest("[data-recent]")?.dataset.recent;
     setHTML(
       "recent-audits",
       recent.length
-        ? `<ol class="recent-list">${recent.map((item) => `<li><a href="#run/${escape(item.id)}">${escape(item.url)}</a><p class="subtle">${escape(item.status)} · ${escape(new Date(item.createdAt).toLocaleString())}${item.baselineRunId ? " · Retest" : ""}${item.summary ? ` · ${item.summary.score === null ? "Not scored" : `${round(item.summary.score)}/100`}${item.summary.provisional ? " · Provisional" : ""} · ${item.summary.numericTotal ? `${item.summary.numericAvailable} of ${item.summary.numericTotal} numeric categories scored` : item.summary.coverage == null ? "Coverage N/A" : `${round(item.summary.coverage)}% coverage`}` : " · Results pending"}</p></li>`).join("")}</ol>`
-        : '<p class="subtle">No saved audits yet. Start with the demo site or a public URL.</p>',
+        ? `<ol class="recent-gallery">${recent.map(recentReport).join("")}</ol>`
+        : `<div class="archive-empty"><h3>Your next discovery starts here.</h3><p>No saved reports yet. Enter your website above, or try the broken and fixed demo.</p><p class="subtle">Illustrative journey: open a service page, capture the result, and independently check what appeared. Actual runs may be partial.</p><a href="#demo-title">Explore the demo</a></div>`,
+    );
+    if (focused)
+      [...document.querySelectorAll("[data-recent]")]
+        .find((el) => el.dataset.recent === focused)
+        ?.focus({ preventScroll: true });
+    $("recent-audits").setAttribute("aria-busy", "false");
+    // Evidence stays behind the existing authenticated API; tokens never enter image URLs.
+    await Promise.all(
+      recent.map(async (item) => {
+        if (!/^frame-[a-f0-9-]+$/.test(item.previewEvidenceId || "")) return;
+        const capture = [...document.querySelectorAll("[data-capture]")].find(
+          (el) => el.dataset.capture === item.id,
+        );
+        if (!capture) return;
+        try {
+          const response = await api(
+            `/api/audits/${encodeURIComponent(item.id)}/evidence/${item.previewEvidenceId}`,
+            { signal },
+          );
+          const blob = await response.blob();
+          if (generation !== recentGeneration) return;
+          const url = URL.createObjectURL(blob);
+          recentImageUrls.add(url);
+          const img = capture.querySelector("img");
+          img.src = url;
+          await img.decode();
+          if (generation !== recentGeneration) return;
+          img.hidden = false;
+          capture.querySelector(".capture-placeholder").hidden = true;
+          capture.classList.add("capture-ready");
+        } catch {
+          if (generation === recentGeneration)
+            capture.querySelector(".capture-placeholder").textContent =
+              "Saved screenshot unavailable";
+        }
+      }),
     );
   } catch (error) {
+    if (generation !== recentGeneration) return;
     $("recent-audits").textContent = `Saved runs unavailable. ${error.message}`;
+  } finally {
+    if (generation === recentGeneration)
+      $("recent-audits").setAttribute("aria-busy", "false");
   }
 }
 $("unlock").onclick = async () => {
@@ -151,6 +208,7 @@ $("unlock").onclick = async () => {
 async function launch(url, baselineRunId, errorId, buttonId) {
   $(errorId).textContent = "";
   $(buttonId).disabled = true;
+  $(buttonId).setAttribute("aria-busy", "true");
   try {
     const response = await (
       await api("/api/audits", {
@@ -166,6 +224,7 @@ async function launch(url, baselineRunId, errorId, buttonId) {
       $("target-url").setAttribute("aria-invalid", "true");
   } finally {
     $(buttonId).disabled = false;
+    $(buttonId).removeAttribute("aria-busy");
   }
 }
 $("target-url").oninput = () => {
@@ -588,6 +647,7 @@ function route() {
   const match = location.hash.match(
     /^#run\/([a-zA-Z0-9-]+)(?:\/finding\/[^/]+)?$/,
   );
+  if (match) clearRecentImages();
   $("start-view").hidden = !!match;
   $("run-view").hidden = !match;
   if (!match) {

@@ -7,6 +7,23 @@ body {
   color: var(--color-text);
   font: 1rem/1.5 var(--font-body);
 }
+::selection {
+  background: var(--color-lime);
+  color: var(--color-text);
+}
+html {
+  scrollbar-color: var(--color-muted) var(--color-bg);
+}
+input {
+  caret-color: var(--color-accent);
+}
+input::placeholder {
+  color: var(--color-muted);
+  opacity: 1;
+}
+button:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
 a {
   color: var(--color-accent);
   text-underline-offset: 0.2em;
@@ -128,10 +145,12 @@ main {
   flex-wrap: wrap;
 }
 .site-header {
-  background: var(--color-surface);
+  background: var(--color-bg);
+  max-width: var(--content-width);
+  margin: auto;
 }
 .brand {
-  font-size: 1.15rem;
+  font-size: 1.4rem;
   font-weight: 750;
   color: var(--color-text);
   text-decoration: none;
@@ -145,8 +164,13 @@ main {
   font-size: 0.875rem;
 }
 .intro {
-  max-width: 45rem;
-  padding: 2.5rem 0 1.5rem;
+  max-width: none;
+  padding: 0.5rem 0 1.5rem;
+}
+.intro h1 {
+  font: 400 clamp(2.25rem, 4.1vw, 3.5rem)/1.07 var(--font-display);
+  letter-spacing: -0.03em;
+  text-wrap: balance;
 }
 .intro > p:not(.eyebrow) {
   font-size: 1.125rem;
@@ -185,14 +209,14 @@ main {
   color: var(--color-muted);
 }
 .scope-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: var(--space-4);
-  margin: var(--space-6) 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  list-style: none;
+  padding: 0;
+  margin: var(--space-4) 0;
 }
-.scope-grid p {
-  padding: var(--space-4) 0;
-  border-top: 1px solid var(--color-border);
+.scope-grid li {
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -543,4 +567,224 @@ pre {
   min-width: 0;
   max-width: 100%;
   overflow-wrap: anywhere;
+}
+
+/* Start screen: the launch action and the visual index share one paper surface. */
+.launch-form > label {
+  font-size: 0.875rem;
+}
+.launch-form .input-row {
+  gap: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-text);
+  border-radius: 4px;
+}
+.launch-form .input-row input {
+  border: 0;
+  background: transparent;
+  padding: 1.1rem 1.25rem;
+  font-size: 1.125rem;
+}
+#start-button {
+  background: var(--color-lime);
+  color: var(--color-text);
+  border: 0;
+  border-left: 1px solid var(--color-text);
+  border-radius: 0 3px 3px 0;
+  padding: 1rem 1.75rem;
+  font-weight: 650;
+}
+.launch-form .input-row:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 4px;
+}
+#target-help {
+  max-width: 110ch;
+}
+#configuration {
+  margin-top: var(--space-3);
+}
+#form-error:empty {
+  display: none;
+}
+#token-row {
+  margin-top: var(--space-6);
+  max-width: 32rem;
+}
+#token-row button {
+  margin-top: var(--space-3);
+}
+.recent-audits {
+  margin-top: 2.5rem;
+  border-top: 2px solid var(--color-text);
+}
+.archive-heading,
+.archive-intro {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-6);
+  flex-wrap: wrap;
+}
+.archive-heading {
+  padding: 1.5rem 0 0.65rem;
+}
+.archive-heading h2 {
+  margin: 0;
+  font: 400 clamp(1.75rem, 3vw, 2.4rem)/1.2 var(--font-display);
+  letter-spacing: -0.025em;
+}
+.archive-intro {
+  padding-bottom: var(--space-6);
+}
+.archive-intro p {
+  margin: 0;
+  color: var(--color-muted);
+}
+.archive-intro a {
+  font-size: 0.875rem;
+}
+.recent-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2.5rem 2rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.recent-gallery li {
+  min-width: 0;
+}
+.report-preview {
+  display: block;
+  text-decoration: none;
+  color: var(--color-text);
+}
+.report-capture {
+  aspect-ratio: 16 / 10;
+  background: #e7e9df;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.report-capture img {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  object-position: top;
+}
+.capture-placeholder {
+  padding: var(--space-6);
+  color: var(--color-muted);
+  text-align: center;
+  font-size: 0.875rem;
+}
+.capture-ready img {
+  animation: capture-arrives 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes capture-arrives {
+  from {
+    clip-path: inset(0 0 12% 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+.preview-caption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: var(--space-4) 0 var(--space-2);
+}
+.preview-caption h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.preview-open {
+  flex: 0 0 auto;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+.report-preview:hover .preview-open {
+  text-decoration-thickness: 2px;
+}
+.preview-status,
+.preview-scope {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  margin: 0 0 var(--space-1);
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.archive-empty,
+.archive-message {
+  padding: 2rem 0;
+  border-top: 1px solid var(--color-border);
+}
+.archive-empty {
+  max-width: 75ch;
+}
+.archive-empty h3 {
+  font: 400 1.65rem/1.25 var(--font-display);
+}
+.archive-empty a {
+  display: inline-block;
+  margin-top: var(--space-4);
+}
+.scope-summary {
+  margin-top: 3rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--color-border);
+}
+.demo-panel {
+  margin-top: 1.5rem;
+}
+.demo-panel #demo-targets {
+  margin-bottom: var(--space-6);
+}
+@media (max-width: 45rem) {
+  .recent-gallery {
+    grid-template-columns: 1fr;
+  }
+  .site-header {
+    align-items: start;
+  }
+  .preview-caption {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .launch-form .input-row {
+    flex-direction: column;
+  }
+  #start-button {
+    border-left: 0;
+    border-top: 1px solid var(--color-text);
+    border-radius: 0 0 3px 3px;
+    white-space: normal;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .capture-ready img {
+    animation: none;
+  }
+}
+.launch-details {
+  margin: var(--space-3) 0 0;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+.preview-url {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+  margin: var(--space-2) 0 0;
 }
