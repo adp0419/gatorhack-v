@@ -29,7 +29,7 @@ Save the same frames/action records for an inspectable timeline. Do not implemen
 
 Example: **82/100 · Provisional · 68% planned-check coverage · 2 of 3 planned states audited**. These numbers are illustrative, never seeded production results.
 
-Keep coverage at the same visual prominence as the score. Include a text link explaining the denominator and sampled scope. Show **Not scored** and **Not applicable** instead of invented category numbers. Confirmed blockers get a visible text callout even when the overall number is high.
+Keep coverage at the same visual prominence as the score. Include a text link explaining the denominator and sampled scope. Show **Not scored** and **Not applicable** instead of invented category numbers. Confirmed blockers get a visible text callout even when the overall number is high. Unscored/N/A category cards show their check-specific reasons beside the number. Run limitations list each blocked resource, its sanitized destination, reason and affected loaded-content scope. A persistent runtime status displays the loaded server revision/start time and warns when source changes require a restart or the loaded interface needs a reload.
 
 Use verdict labels **Passed**, **Failed**, **Needs review**, **Not tested**, and **Not applicable**, supported by icons/text rather than color alone. Category headings describe the actual tested slice: e.g. **Zoom and reflow — 320 px reflow tested; text resizing not tested**.
 

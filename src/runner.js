@@ -62,7 +62,7 @@ export function newRun(url, fixtureOrigin, baselineRunId) {
       authorization: authorized
         ? "configured-client-only-validation"
         : "public-non-submitting",
-      policy: "landing-origin-pinned-proxy-v2",
+      policy: "landing-origin-pinned-proxy-v3",
       checkpoints: [],
     },
     explorationComplete: false,
@@ -122,6 +122,8 @@ export async function runAudit(
       });
     const start = await state(page);
     const setup = [];
+    const history = [];
+    let consecutiveRejections = 0;
     let previous;
     const checkpoints = [];
     async function addCheckpoint(snapshot, actions, source) {
@@ -208,10 +210,10 @@ export async function runAudit(
       let response;
       try {
         response = await provider({
-          goal,
+          goal: `${goal} Supported keys: Tab, Shift+Tab, Escape, Enter, Space, arrows, Home, End, /, ?. Use / or ? only outside editable fields. If an action was blocked, choose a different safe action from the screenshot.`,
           screenshot: screenshot.toString("base64"),
           previous_screenshot: previous,
-          steps: setup,
+          steps: history,
           elements: await visibleElements(page),
           signal: AbortSignal.any([
             combined,
@@ -250,9 +252,30 @@ export async function runAudit(
           reason: error.message,
         });
         run.errors.push(error.message);
-        explorationStop = "blocked";
-        break;
+        guard();
+        if (page.isClosed()) throw error;
+        history.push({
+          ...action,
+          result: `Blocked by executor: ${error.message}. Choose a different safe action; do not repeat this proposal.`,
+        });
+        if (action?.commits === true) {
+          explorationStop = "committing action stopped";
+          break;
+        }
+        consecutiveRejections++;
+        if (consecutiveRejections >= BUDGETS.rejectedActions) {
+          explorationStop = "repeated blocked actions";
+          break;
+        }
+        continue;
       }
+      consecutiveRejections = 0;
+      history.push({
+        ...action,
+        result: outcome.changed
+          ? "Observable state change"
+          : "No observed state change",
+      });
       setup.push({
         ...action,
         beforeUrl: outcome.before.url,
@@ -437,6 +460,7 @@ export async function runAudit(
                     checkpointId: cp.id,
                     record,
                     signal: combined,
+                    selectionReason: `No successful pointer interaction was selected. Exploration stopped: ${explorationStop}. Scroll anchors must reach a visible destination to qualify.`,
                   }),
               );
               run.results.push(...keyboard);
@@ -451,7 +475,10 @@ export async function runAudit(
               );
               await restore(probe, cp.setupUrl || startUrl, cp.setupActions);
               run.results.push(
-                ...(await reflowChecks(probe, cp.id, cp.selected, record)),
+                ...(await reflowChecks(probe, cp.id, cp.selected, record, {
+                  url: cp.setupUrl || startUrl,
+                  setupActions: cp.setupActions,
+                })),
               );
             } finally {
               await probe.close().catch(() => {});

@@ -1,7 +1,7 @@
 export const VERSIONS = Object.freeze({
   schema: "accessbench-v1",
   scoring: "equal-categories-v1",
-  prompt: "explore-v1",
+  prompt: "explore-v2",
 });
 export const VIEWPORTS = Object.freeze({
   desktop: { width: 1280, height: 800 },
@@ -9,6 +9,7 @@ export const VIEWPORTS = Object.freeze({
 });
 export const BUDGETS = Object.freeze({
   calls: 12,
+  rejectedActions: 3,
   explorationMs: 180_000,
   requestMs: 30_000,
   totalMs: 300_000,

@@ -1,13 +1,22 @@
 import axe from "axe-core";
+import { layout, compareLayouts } from "./layout.js";
 import { REGISTRY } from "./registry.js";
 import { aggregateAxe } from "./registry.js";
 import { BUDGETS, VIEWPORTS } from "./config.js";
-import { execute, state, stateKey, settlePage } from "./browser.js";
+import {
+  execute,
+  navigatePage,
+  state,
+  stateKey,
+  settlePage,
+  interactionMatches,
+  sourceStateMatches,
+} from "./browser.js";
 
 const RULES = [...new Set(REGISTRY.flatMap((r) => r.rules))];
 if (RULES.some((id) => !axe.getRules().some((r) => r.ruleId === id)))
   throw new Error("Frozen axe mapping contains an unsupported rule");
-export const methodVersion = `axe-${axe.version}/probes-v1`;
+export const methodVersion = `axe-${axe.version}/probes-v2`;
 export function result(
   checkId,
   checkpointId,
@@ -117,7 +126,7 @@ export const identity = (targets) => {
 
 export async function restore(page, url, actions) {
   await page.setViewportSize(VIEWPORTS.desktop);
-  await page.goto(url, { waitUntil: "domcontentloaded" });
+  await navigatePage(page, url, { waitUntil: "domcontentloaded" });
   await settlePage(page, true);
   for (const action of actions) {
     if (["done", "fail"].includes(action.type)) continue;
@@ -133,6 +142,7 @@ export async function keyboardChecks({
   checkpointId,
   record,
   signal,
+  selectionReason,
 }) {
   await restore(page, url, setupActions);
   if (!selected.length) {
@@ -148,7 +158,8 @@ export async function keyboardChecks({
         checkpointId,
         status,
         controls
-          ? "No safe pointer interaction was selected for this state."
+          ? selectionReason ||
+              "No successful pointer interaction with an observed outcome was selected; keyboard operation remains untested."
           : "No candidate interactive controls were observed.",
       ),
     );
@@ -162,16 +173,36 @@ export async function keyboardChecks({
       if (signal?.aborted) throw signal.reason;
       await restore(page, url, setupActions);
       const initial = await state(page);
-      const equivalent = stateKey(initial) === stateKey(selectedAction.before);
+      const locator = page.locator(target.selector);
+      const targetMatches =
+        (await locator.count()) === 1 &&
+        (await locator.evaluate(
+          (e, original) =>
+            e.tagName === original.tag &&
+            (e.getAttribute("role") || null) === (original.role || null) &&
+            (e.getAttribute("aria-controls") || null) ===
+              (original.controls || null) &&
+            e.tabIndex === original.tabIndex &&
+            (e.getAttribute("href") || null) === (original.href || null) &&
+            (
+              e.getAttribute("aria-label") ||
+              e.innerText ||
+              e.getAttribute("alt") ||
+              ""
+            ).slice(0, 200) === original.name,
+          target,
+        ));
+      const equivalent =
+        targetMatches && sourceStateMatches(initial, selectedAction.before);
       const focusTrail = [];
       let reached = false,
         activated = false;
       const visited = new Set();
       if (equivalent) {
-        await page.evaluate(() => {
+        await page.evaluate((scroll) => {
           document.activeElement?.blur();
-          window.scrollTo(0, 0);
-        });
+          window.scrollTo(scroll?.x || 0, scroll?.y || 0);
+        }, selectedAction.before.scroll);
         for (let i = 0; i < BUDGETS.keyboardKeys; i++) {
           if (signal?.aborted) throw signal.reason;
           await page.keyboard.press("Tab");
@@ -203,16 +234,22 @@ export async function keyboardChecks({
             // The selected pointer action was already validated as non-submitting.
             if (target.inForm) break;
             const beforeUrl = page.url();
-            await execute(page, {
-              type: "key",
-              keys: key.toLowerCase(),
-              reason: "Independent selected-control keyboard probe",
-              commits: false,
-            });
+            try {
+              await execute(page, {
+                type: "key",
+                keys: key.toLowerCase(),
+                reason: "Independent selected-control keyboard probe",
+                commits: false,
+              });
+            } catch (error) {
+              if (signal?.aborted) throw signal.reason;
+              focusTrail.push({ key, blockedReason: error.message });
+              break;
+            }
             await settlePage(page, page.url() !== beforeUrl);
             const observed = await state(page);
             focusTrail.push({ key, state: observed });
-            if (stateKey(observed) === stateKey(after)) {
+            if (interactionMatches(observed, selectedAction)) {
               activated = true;
               break;
             }
@@ -224,6 +261,8 @@ export async function keyboardChecks({
         attempt,
         focusTrail,
         equivalent,
+        expectedSource: selectedAction.before,
+        actualSource: initial,
         reached,
         activated,
       });
@@ -276,7 +315,13 @@ export async function keyboardChecks({
       status,
       status === "failed"
         ? "Repeated keyboard probe and implementation evidence demonstrate a missing keyboard path."
-        : "Selected interaction tested from an equivalent reset state; uncertainty is retained.",
+        : status === "passed"
+          ? "Selected interaction positively verified from a matched reset state."
+          : observations.some((o) => o.attempts.every((a) => !a.equivalent))
+            ? "The source heading, widgets, dialogs or target metadata did not match on reset; no keyboard conclusion is claimed."
+            : property === "reach"
+              ? "The bounded Tab search did not reach every selected target; this alone does not establish a keyboard barrier."
+              : "Keyboard activation did not conclusively reproduce every selected pointer outcome; see the focus and activation evidence.",
       observations,
       {
         evidenceIds: observations.flatMap((o) =>
@@ -292,16 +337,37 @@ export async function keyboardChecks({
 }
 
 export async function validationChecks(page, checkpointId, recipe, record) {
-  const count = await page
-    .locator("input:not([type=hidden]),select,textarea")
-    .count();
+  const fields = await page
+    .locator("input,select,textarea,[role=textbox],[contenteditable=true]")
+    .evaluateAll((nodes) =>
+      nodes.map((e) => {
+        const style = getComputedStyle(e),
+          box = e.getBoundingClientRect();
+        const excluded =
+          ["hidden", "submit", "reset", "button", "image"].includes(e.type) ||
+          e.disabled ||
+          e.readOnly;
+        return {
+          selector: window.__abSelector(e),
+          relevant:
+            !excluded &&
+            box.width > 0 &&
+            box.height > 0 &&
+            style.visibility !== "hidden" &&
+            style.display !== "none" &&
+            !e.closest("[inert],[aria-hidden=true]"),
+        };
+      }),
+    );
+  const count = fields.filter((f) => f.relevant).length;
   if (!count)
     return ["F02", "F03"].map((id) =>
       result(
         id,
         checkpointId,
         "not_applicable",
-        "No relevant fields observed.",
+        "No visible, enabled, editable fields in this state; hidden, disabled and button-only controls do not require validation here.",
+        [{ fields }],
       ),
     );
   if (!recipe)
@@ -376,76 +442,17 @@ export async function validationChecks(page, checkpointId, recipe, record) {
   ];
 }
 
-async function layout(page) {
-  return page.evaluate(() => {
-    const visible = (e) => {
-      const s = getComputedStyle(e),
-        r = e.getBoundingClientRect();
-      return (
-        !!r.width &&
-        !!r.height &&
-        s.visibility !== "hidden" &&
-        s.display !== "none"
-      );
-    };
-    const nodes = [
-      ...document.querySelectorAll(
-        "h1,h2,h3,p,a,button,input,label,li,[onclick],[role=button],[tabindex]",
-      ),
-    ]
-      .filter(visible)
-      .slice(0, 60)
-      .map((e) => {
-        const r = e.getBoundingClientRect();
-        let clipped = false;
-        const clips = [];
-        for (
-          let p = e.parentElement;
-          p && p !== document.body;
-          p = p.parentElement
-        ) {
-          const style = getComputedStyle(p),
-            b = p.getBoundingClientRect();
-          if (
-            ["hidden", "clip"].includes(style.overflowX) &&
-            (r.right > b.right + 2 || r.left < b.left - 2)
-          ) {
-            clipped = true;
-            clips.push({
-              tag: p.tagName,
-              overflow: style.overflowX,
-              bounds: { left: b.left, right: b.right },
-            });
-          }
-        }
-        const table = !!e.closest("table,[role=table],svg,canvas");
-        const x = Math.max(0, Math.min(innerWidth - 1, r.x + r.width / 2)),
-          y = Math.max(0, Math.min(innerHeight - 1, r.y + r.height / 2));
-        const hit = document.elementFromPoint(x, y);
-        return {
-          target: e.id ? `id:${e.id}` : null,
-          text: (e.textContent || "").trim().slice(0, 250),
-          tag: e.tagName,
-          clipped,
-          clips,
-          table,
-          bounds: { left: r.left, right: r.right, width: r.width },
-          hit: e === hit || e.contains(hit),
-          outside: r.left >= innerWidth || r.right <= 0,
-        };
-      });
-    return {
-      width: innerWidth,
-      scrollWidth: document.documentElement.scrollWidth,
-      nodes,
-    };
-  });
-}
-export async function reflowChecks(page, checkpointId, selected, record) {
+export async function reflowChecks(
+  page,
+  checkpointId,
+  selected,
+  record,
+  reset = {},
+) {
   const desktop = await layout(page);
   await page.setViewportSize(VIEWPORTS.narrow);
   await page.waitForTimeout(150);
-  const narrow = await layout(page);
+  const narrow = await layout(page, desktop.nodes);
   const evidenceId = await record(page, "Other accessibility checks", "probe", {
     desktop,
     narrow,
@@ -454,11 +461,7 @@ export async function reflowChecks(page, checkpointId, selected, record) {
     (n) =>
       n.clipped && !n.table && (n.text || ["INPUT", "BUTTON"].includes(n.tag)),
   );
-  const comparable = desktop.nodes.every((n) =>
-    n.target
-      ? narrow.nodes.some((m) => m.target === n.target)
-      : narrow.nodes.some((m) => m.text === n.text && m.tag === n.tag),
-  );
+  const { comparable, unmatched } = compareLayouts(desktop, narrow);
   const overflow = narrow.scrollWidth > 322;
   const status = lost.length
     ? "failed"
@@ -471,6 +474,11 @@ export async function reflowChecks(page, checkpointId, selected, record) {
   const narrowOutcomes = [];
   for (const selection of selected) {
     if (!selection.target || !selection.changed || unavailable.length) continue;
+    if (reset.url) {
+      await restore(page, reset.url, reset.setupActions || []);
+      await page.setViewportSize(VIEWPORTS.narrow);
+      await settlePage(page);
+    }
     let locator = page.locator(selection.target.selector),
       replacement = false;
     if ((await locator.count()) !== 1 || !(await locator.isVisible())) {
@@ -489,18 +497,19 @@ export async function reflowChecks(page, checkpointId, selected, record) {
       locator = page.locator(`[id=${JSON.stringify(candidates[0])}]`);
       replacement = true;
     }
+    await locator.scrollIntoViewIfNeeded();
     const box = await locator.boundingBox();
     if (!box || box.x < 0 || box.x + box.width > 320) continue;
     try {
       const before = await state(page);
-      if (stateKey(before) !== stateKey(selection.before)) continue;
+      if (!sourceStateMatches(before, selection.before)) continue;
       const action = {
         ...selection.action,
         x: ((box.x + box.width / 2) / 320) * 1000,
         y: ((box.y + box.height / 2) / 800) * 1000,
       };
       const outcome = await execute(page, action);
-      const passed = stateKey(outcome.after) === stateKey(selection.after);
+      const passed = interactionMatches(outcome.after, selection);
       narrowOutcomes.push({
         target: selection.target.identity,
         passed,
@@ -533,8 +542,9 @@ export async function reflowChecks(page, checkpointId, selected, record) {
       lost,
       overflow,
       comparable,
+      unmatched,
       scope:
-        "Up to 60 visible text/control nodes; tables and graphical content excluded from clipping confirmation.",
+        "Up to 60 frozen desktop text/control targets relocated at narrow width; unique same-tag/text responsive replacements accepted. Tables and graphical content excluded from clipping confirmation.",
     },
   ];
   return [
@@ -544,7 +554,14 @@ export async function reflowChecks(page, checkpointId, selected, record) {
       status,
       lost.length
         ? "Text or controls are clipped by a non-scrollable ancestor at 320 CSS pixels."
-        : "Sampled text/control preservation and scroll geometry assessed at 320 CSS pixels.",
+        : unmatched.length
+          ? `Could not verify ${unmatched.length} desktop target(s) at 320 CSS pixels: ${unmatched
+              .slice(0, 5)
+              .map((n) => `${n.target} (${n.reason})`)
+              .join(", ")}. See unmatched-target evidence.`
+          : overflow
+            ? "Horizontal overflow observed at 320 CSS pixels; its cause or exception needs review."
+            : "Frozen desktop targets preserved and scroll geometry assessed at 320 CSS pixels.",
       observations,
       {
         viewport: VIEWPORTS.narrow,
@@ -564,7 +581,9 @@ export async function reflowChecks(page, checkpointId, selected, record) {
         ? "A selected control is clipped outside its non-scrollable container."
         : controlStatus === "passed"
           ? "Selected controls reproduce their safe desktop outcomes at 320 CSS pixels."
-          : "Narrow control geometry observed; activation or responsive replacement needs review.",
+          : !targets.length
+            ? "No successful pointer interaction was selected, so narrow control operation could not be tested."
+            : "Narrow control geometry observed; activation or responsive replacement needs review.",
       [{ targets, important, unavailable, narrowOutcomes }],
       {
         viewport: VIEWPORTS.narrow,

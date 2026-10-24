@@ -21,6 +21,17 @@ let token = sessionStorage.getItem("accessbench-token") || "",
   opener,
   requestInFlight = false;
 const seenPhases = new Set();
+let clientFingerprint;
+function showRuntime(info) {
+  if (!info) {
+    $("runtime-status").textContent =
+      "Server version unavailable. Restart the local server to load the current code.";
+    return;
+  }
+  clientFingerprint ||= info.fingerprint;
+  $("runtime-status").textContent =
+    `Server ${info.revision} · started ${new Date(info.startedAt).toLocaleTimeString()} · ${info.stale ? "Source files changed. Restart the server with npm start, or use npm run dev while developing." : clientFingerprint !== info.fingerprint ? "Server code updated. Reload this page to load the matching interface." : "Current loaded build"}`;
+}
 const done = (status) =>
   ["completed", "partial", "failed", "canceled"].includes(status);
 const headers = () => (token ? { Authorization: `Bearer ${token}` } : {});
@@ -61,6 +72,7 @@ const announce = (text) => {
 async function configure() {
   try {
     settings = await (await api("/api/config")).json();
+    showRuntime(settings.server);
     setHTML(
       "demo-targets",
       `<button type="button" class="text-button" data-demo="broken">Try broken fixture</button><button type="button" class="text-button" data-demo="fixed">Try fixed fixture</button><button type="button" class="text-button" data-demo="public">Try example.com</button>`,
@@ -287,7 +299,24 @@ function render() {
     $("provisional").textContent = s.provisional
       ? "Provisional"
       : "Bounded plan complete";
-    setHTML("categories", s.categories.map(categoryCard).join(""));
+    setHTML(
+      "categories",
+      s.categories
+        .map((category) =>
+          categoryCard(
+            {
+              ...category,
+              checkIds:
+                category.checkIds ||
+                settings?.checks
+                  ?.filter((c) => c.category === category.id)
+                  .map((c) => c.id),
+            },
+            run.results,
+          ),
+        )
+        .join(""),
+    );
   }
   $("scope-description").textContent =
     `${run.manifest.checkpoints.filter((c) => c.reconstructed !== false).length} of ${run.manifest.checkpoints.length} planned states reconstructed. Exploration ${run.explorationComplete ? "finished normally" : run.explorationStop || "in progress"}. Keyboard checks cover selected interactions; reflow uses 320 CSS pixels.`;
@@ -319,11 +348,12 @@ function render() {
       )
       .join(""),
   );
+  const networkDetails = run.networkLimitations?.length
+    ? `<h3>Blocked resources and affected scope</h3><ul>${run.networkLimitations.map((item) => `<li><strong>${escape(item.resourceType || item.kind)}</strong> · ${escape(item.destination)}<p>${escape(item.reason || item.kind)}. ${escape(item.affectedChecks || "Checks cover loaded content only.")}</p></li>`).join("")}</ul>`
+    : "";
   setHTML(
     "errors",
-    run.errors.length
-      ? `<h3>Run limitations</h3><ul>${run.errors.map((e) => `<li>${escape(e)}</li>`).join("")}</ul>`
-      : "",
+    `${run.errors.length ? `<h3>Run limitations</h3><ul>${run.errors.map((e) => `<li>${escape(e)}</li>`).join("")}</ul>` : ""}${networkDetails}`,
   );
   $("retest-form").hidden = !done(run.status);
   $("download-report").hidden = !done(run.status);
@@ -478,3 +508,10 @@ function route() {
 window.addEventListener("hashchange", route);
 await configure();
 route();
+
+setInterval(async () => {
+  if (!settings) return;
+  try {
+    showRuntime((await (await api("/api/config")).json()).server);
+  } catch {}
+}, 15000);

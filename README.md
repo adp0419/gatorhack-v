@@ -72,3 +72,5 @@ Keyboard probes cover selected interactions. Reflow uses 320 CSS pixels; browser
 Coding agents should begin with [AGENTS.md](AGENTS.md).
 
 Public start URLs may redirect to a validated public landing origin (for example, a bare domain to its `www` host). AccessBench records this change in the action trail and restricts exploration to the landing origin. Private destinations and later cross-origin navigation remain blocked.
+
+During development, use `npm run dev` to restart Node automatically after source edits. With `npm start`, restart Node after backend changes and reload the browser after frontend changes. The interface displays the loaded server revision/start time and warns when the server or client code is stale.

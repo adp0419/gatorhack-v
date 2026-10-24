@@ -5,6 +5,7 @@ import { logicalUrl } from "./fixtures.js";
 export const checkpointSignature = (snapshot, fixtureOrigin) => ({
   url: logicalUrl(snapshot.url, fixtureOrigin),
   expanded: snapshot.expanded,
+  dialogs: snapshot.dialogs || [],
 });
 const matches = (snapshot, signature, fixtureOrigin) =>
   JSON.stringify(checkpointSignature(snapshot, fixtureOrigin)) ===
@@ -95,6 +96,8 @@ export async function reconstructCheckpoint({
         );
         if (
           outcome.changed &&
+          (!original.scrollTarget ||
+            outcome.after.visibleAnchors?.includes(original.scrollTarget)) &&
           matches(
             outcome.after,
             checkpointSignature(original.after, fixtureOrigin),

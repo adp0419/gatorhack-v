@@ -1,4 +1,6 @@
 import express from "express";
+import { runtimeInfo } from "./runtime-info.js";
+import { REGISTRY } from "./registry.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { timingSafeEqual } from "node:crypto";
@@ -69,6 +71,8 @@ export function createApp({
   });
   app.get("/api/config", (_req, res) =>
     res.json({
+      server: runtimeInfo(),
+      checks: REGISTRY.map(({ id, category }) => ({ id, category })),
       mode: config.publicTargets
         ? "public-local-runner"
         : "allowlisted-local-runner",
@@ -285,7 +289,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     );
   const { app, running } = createApp();
   const server = app.listen(config.port, config.host, () =>
-    console.log(`AccessBench: http://${config.host}:${config.port}`),
+    console.log(
+      `AccessBench: http://${config.host}:${config.port} · revision ${runtimeInfo().revision} · started ${runtimeInfo().startedAt}. Use npm run dev to restart automatically after source edits.`,
+    ),
   );
   server.on("error", (error) => {
     console.error(

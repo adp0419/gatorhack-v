@@ -1,6 +1,6 @@
 # Current status
 
-Last updated: 2026-10-23. Branch: `rohit-mvp`.
+Last updated: 2026-10-23. Branch: `main`.
 
 ## Implemented and exercised
 
@@ -14,21 +14,24 @@ Last updated: 2026-10-23. Branch: `rohit-mvp`.
 - Retests try labeled system replay/direct-URL fallbacks when Twinly cannot finish reconstruction. Stored widget signatures and sampled pointer outcomes must match; missing interactions prevent a comparable delta. Cancellation and deadlines apply to fallbacks.
 - Broken/fixed fixtures plus negative cases for dialog focus containment, responsive control replacement, decorative images, alternative error relationships and a two-dimensional table.
 
-## Latest branch comparison and integration
+## Public-site reliability fixes
 
-- Fetched `origin`; latest ADP `origin/mvp` is `5d5930f` (2026-10-23). Compared its runtime, guards, selectors, probes, restoration, UI and status against the local implementation. Integrated selected improvements into `rohit-mvp`; existing local work was preserved. No remote branch was changed.
-- Adopted validated initial redirects with landing-origin scope and a visible scope event; unique selectors and keyboard focus matching for controls without unique IDs; navigation settling and transient context-replacement retries; bounded checkpoint/probe execution; page-local replay fallback; and clear occupied-port errors.
-- Retained the local IP-pinned network proxy, request/action restrictions, richer fixture coverage, evidence storage, and strict widget/sample retest matching. ADP documents a DNS-rebinding window in its route-only guard; the merged runner keeps network-layer enforcement. Public URL acceptance does not promise that every site, authentication flow, or interaction is supported.
-- Browser regression uncovered redirect chains escaping `route.continue()` interception. Navigation responses now use non-following fetch, validate the Location before fulfillment, and keep local fixtures confined. Proxy CONNECT supports the public standard ports and configured fixture transport used by Playwright fetch.
-- Real W3C demo audit after integration: requested `https://w3.org/WAI/demos/bad/before/home.html`, landed on `https://www.w3.org/WAI/demos/bad/before/home.html`, two Twinly calls, two audited states, no browser execution errors. Run `9aeb5131-d779-46eb-9501-32790624dfa8` took 24.5 seconds, score 25 with 41.7% coverage, explicitly partial/provisional. Form validation stayed untested; unresolved keyboard/reflow outcomes stayed review. Decisions still returned HTTP 429. The preceding smoke run exposed the transient navigation capture error fixed in this integration.
+- Safe `/` and `?` site shortcuts work outside editable fields. Rejected non-committing proposals go back to Twinly with executor feedback; three consecutive rejections stop exploration. Committing proposals still stop immediately. Rejected proposals never enter replay setup.
+- Scroll-only anchors retain before/after coordinates and visible destination/text evidence, so they qualify for selected keyboard/narrow checks. Reset matching checks URL, heading, widgets/dialogs and target metadata instead of incidental clocks/rotating hero text. Keyboard activation inspects the actual focused element, independent of pointer hit testing or overlays; a blocked activation retains review evidence and does not skip forms/reflow.
+- Initial/programmatic navigation resolves each HTTP redirect through the IP-pinned proxy before rendering the buffered final response at its actual URL. Landing scope is committed before embedded documents load. Pointer redirects use the same bounded resolver; later cross-origin and private destinations remain blocked.
+- Reflow freezes desktop targets instead of independently resampling mobile content. Unique tag/text responsive replacements are matched; missing or changed targets remain review with target-specific reasons. Each selected narrow control gets a reset state.
+- Validation applicability excludes hidden, disabled, read-only and button-only fields and retains its inventory. Visible public fields remain untested without server authorization.
+- Category cards explain unscored/N/A results, and run limitations show sanitized blocked resources, reasons and loaded-content scope. The interface displays loaded revision/start time and warns about stale server or client code; `npm run dev` restarts the backend during development.
+- Prompt/probe/navigation versions changed so older results do not receive an invented comparable delta. Numeric scoring policy is unchanged.
+- Final real portfolio verification through the refreshed interface: run `1b8d68d7-1f61-4653-8528-019c474bd5a0`, five Twinly calls, 45.4 seconds. K01/K02 both passed; hidden search fields were validation N/A; no PDF or other network requests were blocked. Reflow retained review with two specifically identified unmatched responsive controls. The run correctly remained partial after Twinly proposed a committing action; that proposal was blocked immediately. Decisions still returned exhausted credits. Score 66.7, coverage 75.0%; neither is a whole-site claim.
 
 ## Verification actually run
 
 - `npm install` and `npx playwright install chromium`; versions are pinned in `package-lock.json` (Playwright 1.64.1; axe-core 4.14.0).
-- `npm test`: 20 tests passed for numerical examples, verdict aggregation, action/network validation (including unlisted public targets and private DNS rejection), target matching, partial resolution, event persistence and bounded recent-run summaries.
-- `npm run test:browser`: 9 tests passed. The fixture test verifies nine seeded failed assertions across the five categories. Fixed/negative variants produce no confirmed failures for those assertions; responsive text preservation remains review while the replacement control is positively operated.
-- New regressions cover controls without IDs, duplicate IDs, initial redirects, fixture redirect escape and later cross-origin redirect rejection. The browser suite also checks API concurrency, cancellation, saved evidence, event cursor reconnection, provider outage, keyboard start/inspect/retest/cancel flows, focus restoration, axe on actual start/report/inspector views, 320 px layout and 200% interface text enlargement.
-- Workflow regression tests exercise the demo selector, JSON attachment/download, recent-run reopening, replay recovery during provider outage, direct-URL fallback, widget mismatch, missing samples and cancellation. Test provider actions are isolated to the harness; no provider usage was spent for this update. Reviewed the captured start-view screenshot.
+- `npm test`: 26 tests passed for numerical examples, verdict aggregation, action/network validation (including unlisted public targets and private DNS rejection), target matching, partial resolution, event persistence and bounded recent-run summaries.
+- `npm run test:browser`: 17 tests passed. The fixture test verifies nine seeded failed assertions across the five categories. Fixed/negative variants produce no confirmed failures for those assertions; the negative fixture’s identical, unique responsive control replacement is positively matched and operated.
+- New regressions cover shortcuts/editing, rejection feedback/limits/committing stops, scroll anchors with changing page text and a focus overlay, frozen reflow samples and missing content, validation applicability, multi-hop redirects, embedded documents, actionable restriction evidence, and stale-build detection. The browser suite also checks API concurrency, cancellation, saved evidence, event cursor reconnection, provider outage, keyboard start/inspect/retest/cancel flows, focus restoration, axe on actual start/report/inspector views, 320 px layout and 200% interface text enlargement.
+- Workflow regression tests exercise the demo selector, JSON attachment/download, recent-run reopening, replay recovery during provider outage, direct-URL fallback, widget mismatch, missing samples and cancellation. Automated test provider actions are isolated to the harness and spend no provider credits; real portfolio verification is recorded separately. Reviewed the captured start-view screenshot.
 - `npm run check`: JavaScript syntax and local Markdown links passed. `npm run format:check` also passed. Dependency audit previously ran; installed dependencies reported zero known vulnerabilities after removing deferred hosting packages.
 - `npm run spike`: Twinly selected a real navigation click; Playwright executed it and captured the changed state. Artifacts are retained locally under `.accessbench/spike/`.
 - Real `npm run audit -- https://example.com`: one bounded initial state; Twinly declined its off-origin-only link. Static contrast, naming and reflow results were retained with keyboard checks untested and an explicitly provisional report. No public form was submitted.
@@ -39,6 +42,11 @@ Last updated: 2026-10-23. Branch: `rohit-mvp`.
 - The configured OpenAI key returns **HTTP 429 `credit_balance_exhausted`** on real Decisions requests. The typed request/answer adapter, impact ordering and outage display exist, but no successful live Decisions answer has been observed. A funded/usable key is needed to finish this acceptance gate.
 - User explicitly deferred deployment on 2026-10-23: continue running with Node in the terminal until the local MVP is ready. No Vercel project was linked, no Sandbox/Blob integration was exercised, and nothing was deployed.
 - No population-wide precision/recall, full WCAG conformance, comprehensive crawling or screen-reader compatibility is claimed. Fixture results are a small seeded demonstration.
+
+## Local server recovery
+
+- The server on port 3000 was an older Node process serving allowlisted-only configuration and missing the recent-audits endpoint, despite updated files on disk. Stopped that stale process and restarted `npm start` from `main`; refreshed the in-app browser. Public URL launch is now available in the running interface. Restart Node after backend changes when using `npm start` (or use `npm run dev` during development).
+- Verified through the refreshed interface: public W3C launch `700d802f-0116-46e1-9dca-e69c8af25d17` followed the validated redirect, used four real Twinly calls, audited home/news, and saved a report in 45.5 seconds. Score 40, coverage 51.7%, partial/provisional because checks remained untested/review. No browser errors; Decisions still returned exhausted credits. Screenshot retained at `/private/tmp/accessbench-public-audit.png`.
 
 ## Next useful action
 

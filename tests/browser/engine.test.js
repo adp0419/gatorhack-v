@@ -87,11 +87,7 @@ test("same detectors confirm seeded defects and accept fixed/negative controls",
       const reflow = await reflowChecks(page, "state-1", [selected], record);
       assert.equal(
         reflow[0].status,
-        variant === "broken"
-          ? "failed"
-          : variant === "negative"
-            ? "review"
-            : "passed",
+        variant === "broken" ? "failed" : "passed",
         `${variant} reflow`,
       );
       assert.equal(

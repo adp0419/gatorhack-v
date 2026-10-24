@@ -26,6 +26,7 @@ export function score(results, manifest, explorationComplete = true) {
       id,
       title,
       counts,
+      checkIds: [...new Set(subset.map((u) => u.checkId))],
       score: conclusive ? (100 * counts.passed) / conclusive : null,
       coverage: eligible ? (100 * conclusive) / eligible : null,
       conclusive,

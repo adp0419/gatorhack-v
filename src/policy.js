@@ -184,6 +184,10 @@ export async function createNetworkProxy(fixtureOrigin) {
 
 const allowedKeys = {
   tab: "Tab",
+  "/": "/",
+  slash: "/",
+  "?": "?",
+  questionmark: "?",
   "shift+tab": "Shift+Tab",
   escape: "Escape",
   enter: "Enter",
@@ -262,4 +266,17 @@ export function validateAction(action, viewport) {
   )
     throw new Error("Invalid wait");
   return output;
+}
+
+// The landing scope must be committed before Chromium parses the response and
+// requests its frames, rather than after page.goto() returns.
+export function responseNavigationOrigin(
+  currentOrigin,
+  responseUrl,
+  status,
+  initial,
+) {
+  return initial && status >= 200 && status < 300
+    ? new URL(responseUrl).origin
+    : currentOrigin;
 }

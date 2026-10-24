@@ -17,8 +17,18 @@ export const verdict = (status) =>
     not_tested: "Not tested",
     not_applicable: "Not applicable",
   })[status] || status;
-export const categoryCard = (category) =>
-  `<article class="panel category"><h3>${escape(category.title)}</h3><strong>${category.state === "not_applicable" ? "Not applicable" : category.score === null ? "Not scored" : `${round(category.score)}/100`}</strong><p>${category.coverage === null ? "Coverage N/A" : `${round(category.coverage)}% coverage`}</p><p>${category.conclusive} / ${category.eligible} conclusive checks</p>${category.id === "reflow" ? "<p>320 px reflow; text resizing not tested</p>" : ""}</article>`;
+export const categoryCard = (category, results = []) =>
+  `<article class="panel category"><h3>${escape(category.title)}</h3><strong>${category.state === "not_applicable" ? "Not applicable" : category.score === null ? "Not scored" : `${round(category.score)}/100`}</strong><p>${category.coverage === null ? "Coverage N/A" : `${round(category.coverage)}% coverage`}</p><p>${category.conclusive} / ${category.eligible} conclusive checks</p>${
+    category.score === null
+      ? `<p>${category.state === "not_applicable" ? "All checks in this category were assessed as not applicable to the selected states." : "No conclusive pass/fail measurements are available; this is not a failure score."}</p><ul>${results
+          .filter((r) => category.checkIds?.includes(r.checkId))
+          .map(
+            (r) =>
+              `<li>${escape(r.checkId)} · ${escape(r.checkpointId)}: ${escape(r.reason)}</li>`,
+          )
+          .join("")}</ul>`
+      : ""
+  }${category.id === "reflow" ? "<p>320 px reflow; text resizing not tested</p>" : ""}</article>`;
 export const findingRow = (finding) =>
   `<article class="finding-row"><div><button type="button" data-finding="${escape(encodeURIComponent(finding.key))}">${escape(finding.checkId)} · ${escape(finding.title)}</button><p>${escape(finding.checkpointId)} · ${escape(finding.verification === "confirmed" ? "Confirmed finding" : "Needs review")} · ${finding.affectedCount} affected</p></div><span class="subtle">${escape(finding.impactSource === "unavailable" ? "Impact unassessed" : `${finding.impact} · AI estimate`)}</span></article>`;
 export const actionLine = (event) => {

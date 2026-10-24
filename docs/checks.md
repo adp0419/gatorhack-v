@@ -52,7 +52,7 @@ Suggested viewports: desktop `1280 × 800`, narrow `320 × 800`, CSS pixels, dev
 1. Capture the source checkpoint, selected control identity, pointer action, and resulting state.
 2. Restore an equivalent source state in an isolated probe context. Setup may use prior recorded actions, but the measured interaction begins from an explicit reset and uses keyboard input only.
 3. Record every key and focused element. Probe recognized paths with Tab/Shift+Tab and appropriate activation/widget keys; default traversal budget is 40 key actions per target.
-4. Compare observable state outcomes, not just screenshots or the agent's declaration of success.
+4. Compare observable state outcomes, not just screenshots or the agent's declaration of success. Anchor scrolling records before/after coordinates, the intended destination ID, its visibility and text. A scroll outcome passes only when keyboard/narrow operation reaches that same visible destination with matching content. Reset matching requires the same URL, heading, widget/dialog states and target tag/name/role/href/controls/tab index; unrelated clocks or rotating hero text do not invalidate that source. Non-scroll outcome uncertainty remains review.
 5. Repeat a suspected failure from a reset state. Confirm only when DOM/event/state evidence supports the missing keyboard operation and recognized alternative paths have been considered. Public-site uncertainty remains `review`.
 
 Repeated focus is not automatically a trap. A dialog may intentionally contain focus. Positive `tabindex` or a non-native element is not by itself proof that the selected task is impossible.
@@ -61,11 +61,11 @@ Focus indicators, suspected traps, heading quality, visible form-instruction qua
 
 ## Forms and reflow boundaries
 
-Active form testing requires a server-configured authorized origin and fixture/test recipe, including expected client-side behavior. A URL entered by a visitor does not grant that authorization. Public sites get static checks; applicable F02/F03 remain `not_tested` when active behavior is unknown. Verified absence of relevant form controls or verified inapplicability of a validation check may justify N/A. Absence of currently displayed errors and lack of authorization do not.
+Assess validation applicability using visible, enabled, editable fields in the selected state; hidden, read-only, disabled and button-only controls alone justify N/A, with the field inventory retained. A dialog opened later is a separate selected state. Active form testing requires a server-configured authorized origin and fixture/test recipe, including expected client-side behavior. A URL entered by a visitor does not grant that authorization. Public sites get static checks; applicable F02/F03 remain `not_tested` when active behavior is unknown. Verified absence of relevant form controls or verified inapplicability of a validation check may justify N/A. Absence of currently displayed errors and lack of authorization do not.
 
 Use controlled invalid input that does not create real submissions. Inspect label/name, invalid state, error text, and recognized error relationships. Do not require one particular ARIA technique when another valid relationship exists.
 
-For reflow, combine narrow screenshots, scroll geometry, hit testing, control operation, and relevant layout metadata. Tables/maps and other justified two-dimensional content require exception handling. A blank screenshot, hidden responsive control, overflow measurement, or AI classification alone cannot confirm a reflow failure. A successful geometric probe alone cannot establish that all content is preserved; narrow the assertion or use `review`.
+Freeze up to 60 desktop text/control targets and relocate those same targets at narrow width rather than independently selecting the first 60 again. Accept a responsive content replacement only when its tag and normalized text match uniquely; preserve missing/hidden/changed-target reasons in observations and report wording. This is a bounded content sample, not full DOM equivalence. For reflow, combine narrow screenshots, scroll geometry, hit testing, control operation, and relevant layout metadata. Tables/maps and other justified two-dimensional content require exception handling. A blank screenshot, hidden responsive control, overflow measurement, or AI classification alone cannot confirm a reflow failure. A successful geometric probe alone cannot establish that all content is preserved; narrow the assertion or use `review`.
 
 ## Evidence contract
 
