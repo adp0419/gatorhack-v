@@ -75,7 +75,15 @@ async function locate(page, target) {
         el = document.querySelector(t.selector);
       } catch {}
       if (!el || H.describe(el).identity !== t.identity) {
-        el = [...document.querySelectorAll('body *')].find((n) => H.isVisible(n) && H.describe(n).identity === t.identity) || null;
+        // Same landmark and name; prefer focusable, then pointer-styled, then
+        // the innermost element.
+        const rank = (d) => (d.focusable ? 2 : d.pointerAffordance ? 1 : 0);
+        const matches = [...document.querySelectorAll('body *')]
+          .filter((n) => H.isVisible(n))
+          .map((n) => ({ n, d: H.describe(n) }))
+          .filter((m) => m.d.identity === t.identity);
+        matches.sort((a, b) => rank(b.d) - rank(a.d) || (a.n.contains(b.n) ? 1 : b.n.contains(a.n) ? -1 : 0));
+        el = matches.length ? matches[0].n : null;
       }
       if (!el) return null;
       el.scrollIntoView({ block: 'center', inline: 'nearest' });
@@ -152,6 +160,8 @@ export async function probeTarget({ context, target, checkpoint, startUrl, recor
     const located = await locate(page, target);
     if (!located) return { ...out, k01: 'not_tested', k02: 'not_tested', reason: 'The selected control was not found in the restored state.' };
     out.dom = located;
+    // Keyboard steps use the element found in this state, not the stored one.
+    const live = { ...target, selector: located.selector, role: located.role };
     await page.mouse.click(located.center.x, located.center.y);
     await settle(page);
     const pointerAfter = await signature(page);
@@ -166,14 +176,14 @@ export async function probeTarget({ context, target, checkpoint, startUrl, recor
     for (let n = 1; n <= 2; n += 1) {
       restored = await restoreCheckpoint(page, checkpoint, startUrl);
       if (!restored.ok) return { ...out, k01: 'not_tested', k02: 'not_tested', reason: 'Could not reset the state for the keyboard attempt.' };
-      attempt = await tabSearch(page, target, budgets.keyboardKeysPerTarget);
+      attempt = await tabSearch(page, live, budgets.keyboardKeysPerTarget);
       out.observations.push({ attempt: n, reached: attempt.reached, keys: attempt.keys, cycled: attempt.cycled, focusSequence: attempt.sequence });
       if (!attempt.reached) {
         out.evidenceIds.push(await say(`Attempt ${n}: ${attempt.keys} Tab presses${attempt.cycled ? ' cycled through the page' : ''} without focusing “${target.name}”.`, true));
         continue;
       }
       out.evidenceIds.push(await say(`Attempt ${n}: “${target.name}” received focus after ${attempt.keys} Tab presses.`, true));
-      const keys = target.role === 'link' ? ['Enter'] : ['Enter', ' '];
+      const keys = live.role === 'link' ? ['Enter'] : ['Enter', ' '];
       activation = { attempt: n, tried: [], matched: false, changedDifferently: false };
       for (const key of keys) {
         await page.keyboard.press(key);

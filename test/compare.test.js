@@ -9,7 +9,7 @@ const versions = { checklist: 'accessbench-v1' };
 function k01(status, targetStatus) {
   return {
     checkId: 'K01', category: 'keyboard', checkpointId: cp.id, status, evidenceIds: [], observations: [],
-    targets: [{ identity: 'navigation|generic|contact', name: 'Contact', role: 'generic', status: targetStatus, pointer: { changed: true, after: { h1: 'Contact us', path: '/contact' } }, observations: [{ focusSequence: [] }], reason: 'no keyboard path' }],
+    targets: [{ identity: 'navigation|contact', name: 'Contact', role: 'generic', status: targetStatus, pointer: { changed: true, after: { h1: 'Contact us', path: '/contact' } }, observations: [{ focusSequence: [] }], reason: 'no keyboard path' }],
   };
 }
 

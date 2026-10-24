@@ -108,7 +108,9 @@ export function helpersFactory() {
       href: el.getAttribute('href') || null,
       landmark: landmark(el),
       rect: { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) },
-      identity: `${landmark(el) || 'page'}|${role(el)}|${name(el).toLowerCase()}`,
+      // Role is deliberately excluded: a fix often changes the element type
+      // (span -> a), and the retest must still find the same control.
+      identity: `${landmark(el) || 'page'}|${name(el).toLowerCase()}`,
     };
   }
 
