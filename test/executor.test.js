@@ -62,3 +62,26 @@ test('private, loopback, link-local and metadata addresses are blocked', () => {
   }
   for (const ip of ['8.8.8.8', '128.84.21.199', '2606:4700::1111']) assert.equal(isPrivateAddress(ip), false, ip);
 });
+
+test('a redirect landing origin is admitted only when it is public', async () => {
+  const { admitLandingOrigin } = await import('../src/runner/url-guard.js');
+  const target = { origin: 'https://8.8.8.8', allowedOrigins: ['https://8.8.8.8'], authorization: null };
+  assert.equal(await admitLandingOrigin(target, 'https://1.1.1.1/home'), true);
+  assert.deepEqual(target.allowedOrigins, ['https://8.8.8.8', 'https://1.1.1.1']);
+  assert.equal(await admitLandingOrigin(target, 'http://127.0.0.1/'), false);
+  assert.equal(await admitLandingOrigin(target, 'https://8.8.8.8:8443/'), false);
+  assert.equal(target.allowedOrigins.length, 2);
+});
+
+test('reloaded states match recorded ones despite default-expanded menus', async () => {
+  const { signatureMatches } = await import('../src/runner/restore.js');
+  const plain = { path: '/mac/', h1: '', dialogs: [], expanded: [] };
+  const searchOpen = { path: '/mac/', h1: 'Mac', dialogs: [], expanded: ['Mac and iPhone', 'Search apple.com'] };
+  const fresh = { path: '/mac/', h1: 'Mac', dialogs: [], expanded: ['Mac and iPhone'] };
+  assert.equal(signatureMatches(plain, fresh), true);
+  assert.equal(signatureMatches(searchOpen, fresh), false);
+  assert.equal(signatureMatches(searchOpen, { ...fresh, expanded: ['Mac and iPhone', 'Search apple.com'] }), true);
+  assert.equal(signatureMatches({ ...plain, h1: 'Other' }, fresh), false);
+  assert.equal(signatureMatches(plain, { ...fresh, path: '/ipad/' }), false);
+  assert.equal(signatureMatches({ ...plain, dialogs: [] }, { ...fresh, dialogs: ['Cookie consent'] }), false);
+});

@@ -38,7 +38,7 @@ export async function newAuditContext(browser, { target, viewport, log = () => {
       try {
         origin = new URL(url).origin;
       } catch {}
-      if (origin !== target.origin) {
+      if (!target.allowedOrigins.includes(origin)) {
         log({ kind: 'navigation_blocked', url });
         return route.abort('blockedbyclient');
       }
@@ -59,4 +59,11 @@ export async function newAuditContext(browser, { target, viewport, log = () => {
 export async function settle(page, ms = 500) {
   await page.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => {});
   await page.waitForTimeout(ms);
+}
+
+// After a navigation, wait for the new page to finish rendering its main
+// content before recording its state.
+export async function settleNavigation(page) {
+  await page.waitForLoadState('load', { timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(800);
 }

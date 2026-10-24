@@ -73,7 +73,28 @@ export async function validateTarget(input) {
       throw new TargetError('This address resolves to a private, local, or reserved network and cannot be audited.');
     }
   }
-  return { url: url.href, origin: url.origin, authorization };
+  return { url: url.href, origin: url.origin, allowedOrigins: [url.origin], authorization };
+}
+
+// The start URL may redirect (apple.com -> www.apple.com). The landing origin
+// becomes part of the audit scope only if it passes the same public checks.
+export async function admitLandingOrigin(target, landedUrl) {
+  let landed;
+  try {
+    landed = new URL(landedUrl);
+  } catch {
+    return false;
+  }
+  if (target.allowedOrigins.includes(landed.origin)) return true;
+  if (!['http:', 'https:'].includes(landed.protocol)) return false;
+  if (!target.authorization) {
+    if (landed.port && !['80', '443'].includes(landed.port)) return false;
+    if (!(await hostIsPublic(landed.hostname))) return false;
+  } else if (landed.origin !== target.authorization.origin) {
+    return false;
+  }
+  target.allowedOrigins.push(landed.origin);
+  return true;
 }
 
 // Used by the browser network guard for every subrequest.

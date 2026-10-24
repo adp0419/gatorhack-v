@@ -137,7 +137,10 @@ function handle(event) {
       logLine(event, `${p.checkId} on ${p.checkpointTitle}: ${p.label}.`);
       break;
     case 'triage.finished':
-      logLine(event, p.status === 'used' ? `Decisions reviewed ${p.count} findings.` : `Evidence review unavailable: ${p.message}`);
+      logLine(event, p.status === 'used' ? `Decisions reviewed ${p.count} findings.` : p.status === 'not_needed' ? 'Evidence review not needed: there are no findings to review.' : `Evidence review unavailable: ${p.message || 'no response'}`);
+      break;
+    case 'scope.updated':
+      logLine(event, p.note);
       break;
     case 'run.error':
       logLine(event, `Error: ${p.message}`);

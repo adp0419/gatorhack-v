@@ -2,12 +2,13 @@
 // evidence review -> scoring/report. Lifecycle is separate from provisionality,
 // and a canceled or partial run still produces an honest report.
 import { budgets, versions, viewports, config } from '../config.js';
-import { createRun, updateRun, saveArtifact } from '../store/run-store.js';
+import { createRun, updateRun, saveArtifact, listRuns, appendEvent } from '../store/run-store.js';
 import { launchBrowser, newAuditContext, settle } from './browser.js';
 import { makeRecorder } from './recorder.js';
 import { explore, initialCheckpoint, readSignature, reachGoal } from './explore.js';
 import { logicalCheckpointId } from './dom-helpers.js';
-import { restoreCheckpoint, currentCheckpointId } from './restore.js';
+import { admitLandingOrigin } from './url-guard.js';
+import { restoreCheckpoint, signatureMatches } from './restore.js';
 import { CHECKS, STATUS_LABELS, makeResult } from '../checks/registry.js';
 import { runAxe } from '../checks/axe.js';
 import { probeCandidates, selectTargets, probeTarget, keyboardResults } from '../checks/keyboard.js';
@@ -19,6 +20,39 @@ import { scoreResults } from '../scoring/score.js';
 import { compareRuns } from '../scoring/compare.js';
 
 const active = new Map();
+
+const PROBE_TIMEOUT_MS = 45_000;
+const STATE_CHECKS_TIMEOUT_MS = 90_000;
+
+class StepTimeout extends Error {}
+
+// Page operations can hang on heavy sites (page.evaluate has no timeout).
+// On timeout, every page in the context is closed so pending operations
+// reject, and the caller records the step as not tested.
+async function guard(context, ms, fn) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new StepTimeout(`timed out after ${Math.round(ms / 1000)} s`)), Math.max(ms, 1000));
+  });
+  try {
+    return await Promise.race([fn(), timeout]);
+  } catch (err) {
+    if (err instanceof StepTimeout) await Promise.all(context.pages().map((pg) => pg.close().catch(() => {})));
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Runs left queued/running by a previous server process can never finish.
+export function markOrphanedRuns() {
+  for (const run of listRuns()) {
+    if (!['queued', 'running'].includes(run.lifecycle) || active.has(run.id)) continue;
+    appendEvent(run.id, { type: 'run.error', phase: 'report', actor: 'system', payload: { message: 'The runner stopped before this audit finished (server restarted).' } });
+    updateRun(run.id, { lifecycle: 'failed', finishedAt: new Date().toISOString() });
+    appendEvent(run.id, { type: 'run.finished', phase: 'report', actor: 'system', payload: { lifecycle: 'failed', elapsedMs: null } });
+  }
+}
 
 export function activeRunId() {
   for (const [id, ctl] of active) if (!ctl.finished) return id;
@@ -76,13 +110,14 @@ async function reconstruct({ page, target, recorder, baseline, isCancelled, dead
         isCancelled,
         deadline: Math.min(deadline, Date.now() + 60_000),
         callBudget: 4,
-        stopWhen: (sig) => logicalCheckpointId(sig) === stored.id,
+        stopWhen: (sig) => logicalCheckpointId(sig) === stored.id || signatureMatches(stored.signature, sig),
         selectCheckpoints: false,
       });
       calls += exp.calls;
       if (exp.stopReason === 'provider_error') providers.twinly = 'unavailable';
       else providers.twinly = 'used';
-      if ((await currentCheckpointId(page)) === stored.id) by = 'twinly';
+      const reached = await readSignature(page);
+      if (logicalCheckpointId(reached) === stored.id || signatureMatches(stored.signature, reached)) by = 'twinly';
     }
     if (!by) {
       const restored = await restoreCheckpoint(page, stored, target.url);
@@ -127,6 +162,12 @@ async function runAudit(run, target, baseline, ctl) {
     if (!response || response.status() >= 400) {
       throw new Error(`The page could not be loaded (HTTP ${response ? response.status() : 'no response'}).`);
     }
+    if (!(await admitLandingOrigin(target, page.url()))) {
+      throw new Error(`The start page redirected to ${new URL(page.url()).origin}, which cannot be audited.`);
+    }
+    if (target.allowedOrigins.length > 1) {
+      recorder.event('scope.updated', 'setup', 'system', { allowedOrigins: target.allowedOrigins, note: `The start page redirected to ${new URL(page.url()).origin}; navigation within it is allowed.` });
+    }
 
     // Phase 1: Twinly exploration, or reconstruction of the baseline plan.
     recorder.event('phase.started', 'exploration', 'system', { label: baseline ? 'Twinly reconstruction of the baseline states' : 'Twinly exploration' });
@@ -161,11 +202,19 @@ async function runAudit(run, target, baseline, ctl) {
       const candidates = {};
       for (const cp of live) {
         if (isCancelled()) break;
-        const p = await context.newPage();
-        const restored = await restoreCheckpoint(p, cp, target.url);
-        candidates[cp.id] = restored.ok ? await probeCandidates(p) : [];
-        cp.setupNeeded = restored.method === 'replay';
-        await p.close();
+        try {
+          await guard(context, Math.min(PROBE_TIMEOUT_MS, deadline - Date.now()), async () => {
+            const p = await context.newPage();
+            const restored = await restoreCheckpoint(p, cp, target.url);
+            candidates[cp.id] = restored.ok ? await probeCandidates(p) : [];
+            if (!restored.ok) recorder.event('run.error', 'keyboard', 'system', { message: `Could not reload ${cp.title} for keyboard probes: ${restored.reason}` });
+            cp.setupNeeded = restored.method === 'replay';
+            await p.close();
+          });
+        } catch (err) {
+          candidates[cp.id] = [];
+          recorder.event('run.error', 'keyboard', 'system', { message: `Selecting keyboard targets in ${cp.title} ${err.message}.` });
+        }
       }
       samples = { keyboardTargets: selectTargets(live, exploration.interactions || [], candidates) };
     }
@@ -175,7 +224,12 @@ async function runAudit(run, target, baseline, ctl) {
       if (isCancelled()) break;
       const cp = live.find((c) => c.id === t.checkpointId);
       recorder.event('probe.step', 'keyboard', 'probe', { text: `Testing “${t.name}” in ${cp.title} (selected by ${t.source === 'twinly' ? 'Twinly exploration' : 'the keyboard probe'}).` });
-      probes.push(await probeTarget({ context, target: t, checkpoint: cp, startUrl: target.url, recorder }));
+      try {
+        probes.push(await guard(context, Math.min(PROBE_TIMEOUT_MS, deadline - Date.now()), () => probeTarget({ context, target: t, checkpoint: cp, startUrl: target.url, recorder })));
+      } catch (err) {
+        recorder.event('probe.step', 'keyboard', 'probe', { text: `Probe of “${t.name}” ${err.message}; it is recorded as not tested.` });
+        probes.push({ target: t, k01: 'not_tested', k02: 'not_tested', reason: `The keyboard probe ${err.message}.`, evidenceIds: [], observations: [] });
+      }
     }
     for (const cp of live) {
       for (const r of keyboardResults(cp, probes)) {
@@ -188,28 +242,40 @@ async function runAudit(run, target, baseline, ctl) {
     recorder.event('phase.started', 'checks', 'system', { label: 'Other accessibility checks' });
     for (const cp of live) {
       if (isCancelled()) break;
-      const p = await context.newPage();
-      const restored = await restoreCheckpoint(p, cp, target.url);
-      if (!restored.ok) {
-        await p.close();
-        continue;
-      }
-      await recorder.frame(p, { phase: 'checks', actor: 'probe', caption: `Running checks on ${cp.title}`, viewport: viewports.desktop });
       try {
-        for (const r of await runAxe(p, cp, { viewport: viewports.desktop })) pushResult(results, r, recorder, 'checks');
-      } catch (err) {
-        recorder.event('run.error', 'checks', 'system', { message: `axe failed on ${cp.title}: ${err.message}` });
-      }
-      const controls = await hasFormControls(p);
-      await p.close();
-      const recipe = target.authorization && (target.authorization.formRecipes || []).find((r) => r.path === new URL(cp.url).pathname);
-      const recipeOutcome = controls && recipe ? await runFormRecipe({ context, checkpoint: cp, startUrl: target.url, recipe, recorder }) : null;
-      for (const r of formResults(cp, { hasControls: controls, recipeOutcome, authorized: !!target.authorization })) pushResult(results, r, recorder, 'checks');
+        await guard(context, Math.min(STATE_CHECKS_TIMEOUT_MS, deadline - Date.now()), async () => {
+          const p = await context.newPage();
+          const restored = await restoreCheckpoint(p, cp, target.url);
+          if (!restored.ok) {
+            await p.close();
+            const reason = `This state could not be reloaded for testing: ${restored.reason}`;
+            for (const check of ['F01', 'F02', 'F03', 'C01', 'S01', 'S02', 'S03', 'R01', 'R02']) pushResult(results, makeResult(check, cp, 'not_tested', reason), recorder, 'checks');
+            return;
+          }
+          await recorder.frame(p, { phase: 'checks', actor: 'probe', caption: `Running checks on ${cp.title}`, viewport: viewports.desktop });
+          try {
+            for (const r of await runAxe(p, cp, { viewport: viewports.desktop })) pushResult(results, r, recorder, 'checks');
+          } catch (err) {
+            recorder.event('run.error', 'checks', 'system', { message: `axe failed on ${cp.title}: ${err.message}` });
+          }
+          const controls = await hasFormControls(p);
+          await p.close();
+          const recipe = target.authorization && (target.authorization.formRecipes || []).find((r) => r.path === new URL(cp.url).pathname);
+          const recipeOutcome = controls && recipe ? await runFormRecipe({ context, checkpoint: cp, startUrl: target.url, recipe, recorder }) : null;
+          for (const r of formResults(cp, { hasControls: controls, recipeOutcome, authorized: !!target.authorization })) pushResult(results, r, recorder, 'checks');
 
-      if (isCancelled()) break;
-      const identities = samples.keyboardTargets.filter((t) => t.checkpointId === cp.id).map((t) => t.identity);
-      const reflow = await runReflow({ context, checkpoint: cp, startUrl: target.url, controlIdentities: identities, recorder });
-      for (const r of reflowResults(cp, reflow)) pushResult(results, r, recorder, 'checks');
+          if (isCancelled()) return;
+          const identities = samples.keyboardTargets.filter((t) => t.checkpointId === cp.id).map((t) => t.identity);
+          const reflow = await runReflow({ context, checkpoint: cp, startUrl: target.url, controlIdentities: identities, recorder });
+          for (const r of reflowResults(cp, reflow)) pushResult(results, r, recorder, 'checks');
+        });
+      } catch (err) {
+        if (!(err instanceof StepTimeout)) throw err;
+        recorder.event('run.error', 'checks', 'system', { message: `Checks on ${cp.title} ${err.message}.` });
+        for (const check of ['F01', 'F02', 'F03', 'C01', 'S01', 'S02', 'S03', 'R01', 'R02']) {
+          if (!results.some((r) => r.checkId === check && r.checkpointId === cp.id)) pushResult(results, makeResult(check, cp, 'not_tested', `Checks on this state ${err.message}.`), recorder, 'checks');
+        }
+      }
     }
   } catch (err) {
     fatal = err;
@@ -223,7 +289,7 @@ async function runAudit(run, target, baseline, ctl) {
       lifecycle = ctl.cancelled ? 'canceled' : 'failed';
     } else {
       // Every planned check/state keeps a result; nothing silently disappears.
-      fillMissing(results, checkpoints, ctl.cancelled ? 'The audit was canceled before this check ran.' : fatal ? `The audit stopped early: ${fatal.message}` : 'The audit reached its time budget before this check ran.');
+      fillMissing(results, checkpoints, ctl.cancelled ? 'The audit was canceled before this check ran.' : fatal ? `The audit stopped early: ${fatal.message}` : Date.now() > deadline ? 'The audit reached its time budget before this check ran.' : 'This check did not run.');
 
       recorder.event('phase.started', 'triage', 'system', { label: 'Evidence review' });
       let findings = buildFindings(results, checkpoints);
@@ -282,7 +348,10 @@ async function runAudit(run, target, baseline, ctl) {
   recorder.event('run.finished', 'report', 'system', { lifecycle, elapsedMs: Date.now() - startedAt });
 }
 
+// One result per check/state; a step that finishes after its timeout was
+// already recorded as not tested and is ignored.
 function pushResult(results, result, recorder, phase) {
+  if (results.some((r) => r.checkId === result.checkId && r.checkpointId === result.checkpointId)) return;
   results.push(result);
   recorder.event('check.completed', phase, 'probe', { checkId: result.checkId, checkpointTitle: result.checkpointTitle, status: result.status, label: STATUS_LABELS[result.status] });
 }
@@ -319,6 +388,7 @@ function saveManifest(run, target, checkpoints, samples) {
     viewports,
     startUrl: target.url,
     origin: target.origin,
+    allowedOrigins: target.allowedOrigins,
     authorizationMode: run.mode,
     navigationPolicy: 'same-origin top-level navigation; public subresources only',
     checkpoints: checkpoints.map(({ id, url, title, setupGoal, setupActions, signature }) => ({ id, url, title, setupGoal, setupActions, signature })),

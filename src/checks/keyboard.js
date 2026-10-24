@@ -139,7 +139,8 @@ async function tabSearch(page, target, maxKeys) {
   return { reached: false, keys: maxKeys, sequence, cycled: false };
 }
 
-function sameOutcome(a, b) {
+function sameOutcome(a, b, navigated) {
+  if (navigated) return a.path === b.path && a.h1 === b.h1;
   return a.path === b.path && a.h1 === b.h1 && JSON.stringify(a.dialogs) === JSON.stringify(b.dialogs) && JSON.stringify(a.expanded) === JSON.stringify(b.expanded);
 }
 
@@ -190,7 +191,7 @@ export async function probeTarget({ context, target, checkpoint, startUrl, recor
         await settle(page);
         const after = await signature(page);
         activation.tried.push({ key: key === ' ' ? 'Space' : key, after });
-        if (sameOutcome(after, pointerAfter)) {
+        if (sameOutcome(after, pointerAfter, pointerAfter.path !== before.path)) {
           activation.matched = true;
           break;
         }
@@ -243,7 +244,7 @@ export function keyboardResults(checkpoint, probes, { reconstructed = true } = {
       passed: checkId === 'K01' ? 'Every selected control was reached with Tab.' : 'Keyboard activation matched the pointer outcome for every reached control.',
       failed: checkId === 'K01' ? 'At least one selected control has no keyboard path.' : 'At least one reached control did not respond to keyboard activation.',
       review: 'Keyboard evidence is inconclusive for at least one selected control.',
-      not_tested: checkId === 'K02' ? 'Activation could not be attempted because the control never received focus.' : 'The probe could not run.',
+      not_tested: (mine.find((p) => p.reason) || {}).reason || (checkId === 'K02' ? 'Activation could not be attempted because the control never received focus.' : 'The probe could not run.'),
     }[status] || '';
     return makeResult(checkId, checkpoint, status, reason, {
       method: 'keyboard probe (Tab/Shift+Tab traversal, Enter/Space activation)',

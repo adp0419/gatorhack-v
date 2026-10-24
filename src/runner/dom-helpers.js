@@ -62,25 +62,26 @@ export function helpersFactory() {
     return clean(el.getAttribute('title'));
   }
 
+  // Unique selector: anchored at the nearest unique id, otherwise a full path
+  // from body. Partial paths can match a different element elsewhere.
   function selector(el) {
-    if (el.id && /^[A-Za-z][\w-]*$/.test(el.id) && document.querySelectorAll(`#${el.id}`).length === 1) return `#${el.id}`;
+    const uniqueId = (n) => n.id && /^[A-Za-z][\w-]*$/.test(n.id) && document.querySelectorAll(`#${n.id}`).length === 1;
+    if (uniqueId(el)) return `#${el.id}`;
     const parts = [];
     let node = el;
-    while (node && node.nodeType === 1 && node !== document.documentElement && parts.length < 6) {
-      if (node.id && /^[A-Za-z][\w-]*$/.test(node.id) && document.querySelectorAll(`#${node.id}`).length === 1) {
+    while (node && node.nodeType === 1 && node !== document.body && node !== document.documentElement) {
+      if (uniqueId(node)) {
         parts.unshift(`#${node.id}`);
-        break;
+        return parts.join(' > ');
       }
       const tag = node.tagName.toLowerCase();
       const parent = node.parentElement;
-      if (!parent) {
-        parts.unshift(tag);
-        break;
-      }
+      if (!parent) break;
       const same = [...parent.children].filter((c) => c.tagName === node.tagName);
       parts.unshift(same.length > 1 ? `${tag}:nth-of-type(${same.indexOf(node) + 1})` : tag);
       node = parent;
     }
+    parts.unshift('body');
     return parts.join(' > ');
   }
 

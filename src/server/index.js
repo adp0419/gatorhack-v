@@ -4,6 +4,7 @@ import express from 'express';
 import path from 'node:path';
 import { config } from '../config.js';
 import { apiRouter } from './routes.js';
+import { markOrphanedRuns } from '../runner/run-audit.js';
 
 const app = express();
 app.disable('x-powered-by');
@@ -18,6 +19,9 @@ app.use(express.static(path.join(config.root, 'public'), { extensions: ['html'] 
 
 app
   .listen(config.port, () => {
+    // Only the process that owns the port may close out runs left behind by
+    // a previous server; a failed duplicate start must not touch live runs.
+    markOrphanedRuns();
     console.log(`AccessBench at http://localhost:${config.port}`);
     if (!config.twinly.apiKey) console.log('Twinly key not configured: exploration will be unavailable.');
     if (!config.openai.apiKey) console.log('OpenAI key not configured: triage will be unavailable.');

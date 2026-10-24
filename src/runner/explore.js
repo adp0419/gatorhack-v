@@ -4,7 +4,7 @@ import { nextAction } from '../providers/twinly.js';
 import { budgets, viewports } from '../config.js';
 import { inPage, signatureKey, logicalCheckpointId } from './dom-helpers.js';
 import { gatherFacts, reviewAction, execute, toCssPoint } from './executor.js';
-import { settle } from './browser.js';
+import { settle, settleNavigation } from './browser.js';
 
 export const AUTO_OBJECTIVE =
   'You are helping an accessibility auditor explore this website. Use the mouse like a typical visitor to reach the most important ' +
@@ -16,6 +16,13 @@ export async function readSignature(page) {
   return inPage(page, (H) => H.stateSignature());
 }
 
+function stateTitle(sig) {
+  const base = sig.h1 || sig.title || sig.path;
+  if (sig.dialogs.length) return `${base} — ${sig.dialogs[0]} dialog open`;
+  if (sig.expanded.length) return `${base} — ${sig.expanded[0]} open`;
+  return base;
+}
+
 function makeCheckpoint(sig, url, index, setupActions, sourceAction) {
   const labels = setupActions.map((a) => a.label || a.type).filter(Boolean);
   return {
@@ -23,7 +30,7 @@ function makeCheckpoint(sig, url, index, setupActions, sourceAction) {
     index,
     url,
     signature: sig,
-    title: sig.h1 || sig.title || sig.path,
+    title: stateTitle(sig),
     setupActions,
     setupGoal: labels.length
       ? `From the start page: ${labels.join(', then ')}. Reach the state titled "${sig.h1 || sig.title}" at ${sig.path}.`
@@ -94,7 +101,7 @@ export async function explore({ page, target, recorder, goal = AUTO_OBJECTIVE, c
     }
 
     const point = ['click', 'double_click'].includes(action.type) ? toCssPoint(action.x, action.y, viewport) : null;
-    const facts = await gatherFacts(page, action, point, target.origin);
+    const facts = await gatherFacts(page, action, point, target.allowedOrigins);
     const verdict = reviewAction(action, facts);
     if (!verdict.allowed) {
       recorder.event('action.blocked', 'exploration', 'system', { action, reason: verdict.reason, target: facts.target || null });
@@ -114,6 +121,7 @@ export async function explore({ page, target, recorder, goal = AUTO_OBJECTIVE, c
     try {
       outcome = await execute(page, action, viewport);
       await settle(page);
+      if (page.url() !== beforeUrl) await settleNavigation(page);
     } catch (err) {
       recorder.event('action.failed', 'exploration', 'system', { action, message: err.message });
       steps.push({ ...action, result: `Failed to perform: ${err.message}` });
@@ -132,7 +140,7 @@ export async function explore({ page, target, recorder, goal = AUTO_OBJECTIVE, c
     }
 
     if (selectCheckpoints && changed && !seen.has(signatureKey(after)) && checkpoints.length < budgets.maxCheckpoints) {
-      const cp = makeCheckpoint(after, page.url(), checkpoints.length, executed.map(({ type, x, y, label, keys, text, cssPoint }) => ({ type, x, y, label, keys, text, cssPoint })), record);
+      const cp = makeCheckpoint(after, page.url(), checkpoints.length, executed.map(({ type, x, y, label, keys, text, cssPoint, beforeUrl, afterUrl }) => ({ type, x, y, label, keys, text, cssPoint, beforeUrl, afterUrl })), record);
       checkpoints.push(cp);
       seen.set(signatureKey(after), cp);
       recorder.event('checkpoint.selected', 'exploration', 'system', { checkpoint: cp });

@@ -57,7 +57,7 @@ export function reviewAction(action, facts = {}) {
   }
 }
 
-export async function gatherFacts(page, action, point, startOrigin) {
+export async function gatherFacts(page, action, point, allowedOrigins) {
   return inPage(
     page,
     (H, arg) => {
@@ -75,7 +75,7 @@ export async function gatherFacts(page, action, point, startOrigin) {
           let crossOrigin = false;
           if (link) {
             try {
-              crossOrigin = new URL(link.href, location.href).origin !== arg.startOrigin;
+              crossOrigin = !arg.allowedOrigins.includes(new URL(link.href, location.href).origin);
             } catch {}
           }
           const btn = el.closest('button, input');
@@ -92,7 +92,7 @@ export async function gatherFacts(page, action, point, startOrigin) {
       }
       return facts;
     },
-    { point, startOrigin },
+    { point, allowedOrigins },
   );
 }
 
