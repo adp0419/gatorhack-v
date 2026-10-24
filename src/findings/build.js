@@ -61,6 +61,7 @@ function keyboardFindings(result, checkpoint) {
         expected: isK01 ? `“${t.name}” receives focus through Tab, like other controls.` : `Pressing Enter or Space on “${t.name}” opens ${pointerDest}, as a click does.`,
         observed: t.reason || (isK01 ? `Focus never reached “${t.name}”.` : 'Keyboard activation did not reproduce the pointer result.'),
         affectedCount: 1,
+        evidenceIds: t.evidenceIds || [],
         blocker,
         focusSequence: seq,
         pointerResult: pointerDest,

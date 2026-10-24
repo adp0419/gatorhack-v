@@ -238,7 +238,7 @@ export function keyboardResults(checkpoint, probes, { reconstructed = true } = {
     return makeResult(checkId, checkpoint, status, reason, {
       method: 'keyboard probe (Tab/Shift+Tab traversal, Enter/Space activation)',
       viewport: { width: 1280, height: 800 },
-      targets: mine.map((p) => ({ ...p.target, status: p[key], reason: p.reason || null, pointer: p.pointer, activation: p.activation || null, observations: p.observations, dom: p.dom })),
+      targets: mine.map((p) => ({ ...p.target, status: p[key], reason: p.reason || null, pointer: p.pointer, activation: p.activation || null, observations: p.observations, dom: p.dom, evidenceIds: p.evidenceIds.filter(Boolean) })),
       evidenceIds: mine.flatMap((p) => p.evidenceIds).filter(Boolean),
     });
   };

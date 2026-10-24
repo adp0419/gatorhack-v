@@ -84,6 +84,14 @@ apiRouter.get('/audits/:id/events', (req, res) => {
   });
 });
 
+apiRouter.get('/audits/:id/evidence/:evidenceId/meta', (req, res) => {
+  const run = loadRun(req, res);
+  if (!run) return;
+  const file = framePath(run.id, req.params.evidenceId);
+  if (!file) return res.status(404).json({ error: 'Evidence not found.' });
+  res.sendFile(file.replace(/\.jpg$/, '.json'));
+});
+
 apiRouter.get('/audits/:id/evidence/:evidenceId', (req, res) => {
   const run = loadRun(req, res);
   if (!run) return;
